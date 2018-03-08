@@ -6,7 +6,8 @@ It's being written as a Group Project assignment at the University of Lincoln.
 
 CMP2089M-1718 - Group Project (Fake News Detector)
 
-|-------------|-------------------|--------------------------|
+|             |                   |                          |
+|:------------|:------------------|:-------------------------|
 | COE16609509 | James Coe         | Napk1ns / FakeNewsGroup2 |
 | VAI16606590 | Paulius Vaitaitis | -                        |
 | MIL16606229 | Lee Milner        | Lmilner                  |
