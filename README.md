@@ -14,4 +14,4 @@ CMP2089M-1718 - Group Project (Fake News Detector)
 | ANS15595025 | Ethan Ansell      | zemja                    |
 | WAN16641828 | Jiahe Wang        | Hearn000                 |
 | ZHU15625064 | Dahai Zhu         | -                        |
-| WOR16609305 | Ashley Worth      | -                        |
+| WOR16609305 | Ashley Worth      | AshWorth24               |
