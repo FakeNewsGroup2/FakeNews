@@ -46,6 +46,20 @@ vector<string> load_list(const string& path, bool UNIX = false)
     return lines;
 }
 
+class InputURL
+{
+ public:
+    string URL;
+}
+
+class Lists
+{
+public:
+    vector<string> whitelist;
+    vector<string> blacklist;
+}
+
+
 int main(int argc, char* argv[])
 {
     vector<string> domains;
@@ -57,13 +71,13 @@ int main(int argc, char* argv[])
         domains.emplace_back(argv[0]);
     }
 
-    vector<string> whitelist;
-    vector<string> blacklist;
+    cout << "Enter URL of webpage/news article to assess:" << endl;
+-	InputURL.URL = cin.get();
 
     try
     {
-        whitelist = load_list("whitelist.txt");
-        blacklist = load_list("blacklist.txt");
+        Lists.whitelist = load_list("whitelist.txt");
+        Lists.blacklist = load_list("blacklist.txt");
     }
 
     catch (const exc::exception& e)
