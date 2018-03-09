@@ -12,6 +12,35 @@ https://uk.reuters.com/
 Russian News Agency TASS
 http://tass.com/
 
+ELLE
+http://www.elle.de/
+
+dpa
+https://www.dpa.com/en/
+
+independent
+http://www.independent.co.uk/
+
+the guardian
+https://www.theguardian.com/observer
+https://www.theguardian.com/uk
+
+the telegraph
+https://www.telegraph.co.uk/
+
+the economist
+https://www.economist.com/
+
+Mirror
+https://www.mirror.co.uk/
+
+the times
+https://www.thetimes.co.uk/
+
+Nature Research
+https://www.nature.com/
+
+
 ASIA
 
 NHK WORLD
@@ -19,6 +48,9 @@ https://www3.nhk.or.jp/nhkworld/
 
 ALJAZEERA
 https://www.aljazeera.com/
+
+THE STAR
+https://www.thestar.com.my/
 
 AMERICA
 
