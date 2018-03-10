@@ -45,6 +45,28 @@ class file : public exception
     file(const std::string& what) : exception(what) { }
 };
 
+class format : public exception
+// To throw when something a string argument isn't in the valid format, e.g. a URL.
+{
+    public:
+    format(const std::string& what) : exception(what) { }
+};
+
+class init : public exception
+// To throw when there was a problem initialising the program or some library.
+// TODO Perhaps this will later become unneeded.
+{
+    public:
+    init(const std::string& what) : exception(what) { }
+};
+
+class net : public exception
+// To throw when there is some problem involving networking, such as a connection error.
+{
+    public:
+    net(const std::string& what) : exception(what) { }
+};
+
 }
 
 }

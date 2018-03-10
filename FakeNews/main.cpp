@@ -4,8 +4,13 @@
 #include <fstream>
 #include <exception>
 
+#include <cstdlib>
+
+#include "curl/curl.h"
+
+#include "fs.h"
 #include "exc.h"
-#include "lists.h"
+#include "net.h"
 
 // CMP2089M-1718 - Group Project
 // Fake News Detector
@@ -30,79 +35,91 @@ using std::ifstream;
 
 using namespace fakenews;
 
-vector<string> load_list(const string& path, bool UNIX = false)
-// Loads a file, line by line.
-// path: The path to a text file to load.
-// UNIX: Whether to expect UNIX ('\n') line endings. Otherwise expects DOS ('\r\n'). Defaults to
-//       `false`.
-// Returns a `vector<string>`, where each element is a line in the file.
+// TODO Instead of having `init()`, `cleanup()` and `die()`, put the whole program into a class
+// which initialises/cleans up in its constructor/destructor. Then wrap everything in `main()`
+// (which should be almost nothing) in a single try/catch block.
+
+void init()
+// Initialises the libraries used in this program.
+// Throws `exc::init` if a library failed to initialise.
+{ if (curl_global_init(CURL_GLOBAL_DEFAULT)) throw exc::init("Could not initialise libcurl"); }
+
+// Shuts down any libraries.
+void cleanup() { curl_global_cleanup(); }
+
+void die(const string& msg)
+// Prints the error message, cleans up, and quits the program. Purely for convenience (and so that
+// the error messages are consistent.)
+// msg: The error message to print. Should probably be `exc::exception.what()`.
 {
-    vector<string> lines;
-    ifstream input(path);
-    if (!input) throw exc::file(string("File at '") + path + "' could not be opened for reading.");
-    for (string line; getline(input, line, '\n'); lines.emplace_back(std::move(line)));
-    if (!UNIX) for (string& s : lines) s.pop_back(); // Remove the trailing '\r,' if needed.
-    for (string& s : lines) s.shrink_to_fit();
-    lines.shrink_to_fit();
-    return lines;
+    cerr << "Error: " << msg << endl;
+    cleanup();
+    exit(1);
 }
-
-class InputURL
-{
- public:
-	 InputURL()
-	 {}
-	 ~InputURL()
-	 {}
-	 void SetUrl(string str)
-	 {
-		 URL = str;
-	 }
-
-private:
-	string URL;
-};
-
-
 
 int main(int argc, char* argv[])
 {
-    vector<string> domains;
-    
-    InputURL input;
-	Lists lists;
+    vector<net::Address> addresses;
+    vector<string> whitelist;
+    vector<string> blacklist;
 
-    for (int i = 0; i < argc; ++i)
+    try                             { init();        }
+    catch (const exc::exception& e) { die(e.what()); }
+
+    try { for (int i = 1; i < argc; ++i) addresses.emplace_back(argv[i]); }
+    catch (const exc::exception& e) { die(e.what()); }
+
+    // If there were no arguments given, prompt the user for URLs.
+    if (argc == 1)
     {
-        // TODO Eventually, we'll get the domain part from the URL, ensuring it's a valid URL in the
-        // process and throwing a child of `exc::exception` if it's not.
-        domains.emplace_back(argv[0]);
+        cout << "Please enter URLs, one per line. (Leave blank and press Enter when done.)" << endl;
+        
+        for (int i = 1; ; ++i)
+        {
+            string line;
+            cout << "(URL " << i << ") > " << std::flush;
+            getline(std::cin, line);
+            if (line.empty()) break;
+
+            try                             { addresses.emplace_back(line); }
+            catch (const exc::exception& e) { die(e.what());                }
+        }
+
+        cout << endl;
     }
-
-    cout << "Enter URL of webpage/news article to assess:" << endl;
-	string cintmp;
-	std::cin >> cintmp;
-
-	input.SetUrl(cintmp);
 
     try
     {
-        lists.SetWhitelist(load_list("whitelist.txt"));
-	lists.SetBlacklist(load_list("blacklist.txt"));
+        whitelist = fs::load_lines("whitelist.txt");
+	    blacklist = fs::load_lines("blacklist.txt");
     }
 
-    catch (const exc::exception& e)
-    {
-        cerr << "Error: " << e.what() << endl;
-        return 1;
-    }
-
-    lists.printWhite();
-    
-
-	lists.printBlack();
+    catch (const exc::exception& e) { die(e.what()); }
 
     // TODO Do stuff!
-    system("pause");
+
+    // Use the new Address class to split a URL into its parts!
+    cout << "URLs:" << endl;
+    for (net::Address& a : addresses)
+    {
+        cout << a.full() << endl;
+        cout << '\t' << "protocol: " << (a.protocol().empty() ? "<none>" : a.protocol()) << endl;
+        cout << '\t' << "resource: " << a.resource() << endl;
+        cout << '\t' << "request:  " << (a.request().empty() ? "<none>" : a.request()) << endl;
+    }
+
+    // Try downloading an internet page with `get_file()`.
+    string url = ("http://google.com");
+    cout << "Fetching '" << url << "'..." << endl;
+    string google = net::get_file(url);
+
+    // Print out the first 25 characters. (Or all of them if there's less than 25.)
+    string::size_type size = 25 < google.size() ? 25 : google.size();
+    for (int i = 0; i < size; ++i) cout << google[i];
+    cout << (size == 25 ? "..." : "") << endl; // If there was more than 25 characters, print '...'
+
+    cleanup();
+    // system("pause"); // Please no.... just press Ctrl-F5 to run the program instead.
+                        // (Or run it with command prompt as nature intended...)
     return 0;
 }

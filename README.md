@@ -15,5 +15,3 @@ CMP2089M-1718 - Group Project (Fake News Detector)
 | WAN16641828 | Jiahe Wang        | Hearn000                 |
 | ZHU15625064 | Dahai Zhu         | -                        |
 | WOR16609305 | Ashley Worth      | AshWorth24               |
-
-
