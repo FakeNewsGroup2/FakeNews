@@ -136,9 +136,13 @@
     <ClCompile Include="net.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Article.h" />
+    <ClInclude Include="BlackWhiteEstimator.h" />
+    <ClInclude Include="Estimator.h" />
     <ClInclude Include="exc.h" />
     <ClInclude Include="fs.h" />
     <ClInclude Include="net.h" />
+    <ClInclude Include="ExampleEstimator.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="blacklist.txt">

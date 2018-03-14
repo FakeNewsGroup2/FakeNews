@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <exception>
+#include <memory>
 
 #include <cstdlib>
 
@@ -11,6 +12,8 @@
 #include "fs.h"
 #include "exc.h"
 #include "net.h"
+#include "Article.h"
+#include "BlackWhiteEstimator.h"
 
 // CMP2089M-1718 - Group Project
 // Fake News Detector
@@ -60,8 +63,6 @@ void die(const string& msg)
 int main(int argc, char* argv[])
 {
     vector<net::Address> addresses;
-    vector<string> whitelist;
-    vector<string> blacklist;
 
     try                             { init();        }
     catch (const exc::exception& e) { die(e.what()); }
@@ -88,35 +89,44 @@ int main(int argc, char* argv[])
         cout << endl;
     }
 
+    // TODO Do stuff!
+
+    // TODO Create and use a load of `Estimator`s on all the URLs, weight their estimates and
+    // produce an average confidence.
+
+    // Just manually create a test article for now.
+    article::Article test_article
+    (
+        "Breaking News: Group 2 Passes Assignment",
+        "Due to some absolutely gr8 teamwork, Group 2 have passed their assignment.",
+        net::Address("http://www.legit_site.com/articles/group2.html")
+    );
+
+    // Evaluate it using black/whitelists.
+    // We use a pointer because there is no default constructor and we want to wrap the creation in
+    // a try block.
+    // We use a `shared_ptr` so that if there's an uncaught exception, there's no memory leak.
+    std::shared_ptr<estimator::BlackWhiteEstimator> bwe;
+
     try
     {
-        whitelist = fs::load_lines("whitelist.txt");
-	    blacklist = fs::load_lines("blacklist.txt");
+        bwe = std::shared_ptr<estimator::BlackWhiteEstimator>
+            (new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
     }
 
     catch (const exc::exception& e) { die(e.what()); }
 
-    // TODO Do stuff!
+    estimator::Estimate result = bwe->estimate();
 
-    // Use the new Address class to split a URL into its parts!
-    cout << "URLs:" << endl;
-    for (net::Address& a : addresses)
-    {
-        cout << a.full() << endl;
-        cout << '\t' << "protocol: " << (a.protocol().empty() ? "<none>" : a.protocol()) << endl;
-        cout << '\t' << "resource: " << a.resource() << endl;
-        cout << '\t' << "request:  " << (a.request().empty() ? "<none>" : a.request()) << endl;
-    }
+    cout << "For our test article, veracity is '" << result.veracity << ",' and confidence is '"
+        << result.confidence << ".'" << endl;
 
-    // Try downloading an internet page with `get_file()`.
-    string url = ("http://google.com");
-    cout << "Fetching '" << url << "'..." << endl;
-    string google = net::get_file(url);
+    cout << "veracity:   0 = definitely fake, 1 = definitely true" << endl;
+    cout << "confidence: 0 = can't estimate,  1 = we are certain"  << endl;
 
-    // Print out the first 25 characters. (Or all of them if there's less than 25.)
-    string::size_type size = 25 < google.size() ? 25 : google.size();
-    for (int i = 0; i < size; ++i) cout << google[i];
-    cout << (size == 25 ? "..." : "") << endl; // If there was more than 25 characters, print '...'
+    // Only create one of each `Estimator`! To change the article, do this:
+    // estimator.article(my_new_article).estimate();
+    // estimator.article(another_new_article).estimate();
 
     cleanup();
     // system("pause"); // Please no.... just press Ctrl-F5 to run the program instead.

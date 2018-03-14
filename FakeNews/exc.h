@@ -3,9 +3,9 @@
 // This file contains various exceptions for use within this program.
 
 // #################################################################################################
-// # NOTE: THIS FILE HAS BEEN USED IN A PREVIOUS ASSIGNMENT CMP2090M-1718 - OBJECT-ORIENTED        #
-// #       PROGRAMMING ITEM 1, BY ETHAN ANSELL ANS15595025.                                        #
-// #       IT HAS HAD ONLY MINOR MODIFICATIONS HERE.                                               #
+// # NOTE: A VERSION OF THIS FILE HAS BEEN USED IN A PREVIOUS ASSIGNMENT CMP2090M-1718 -           #
+// #       OBJECT-ORIENTED PROGRAMMING ITEM 1, BY ETHAN ANSELL ANS15595025.                        #
+// #       IT HAS HAD MANY CLASSES ADDED/REMOVED.                                                  #
 // #################################################################################################
 
 #include <string>
@@ -18,7 +18,7 @@ namespace exc
 
 class exception
 // An abstract exception type. Any exception thrown by us should derive from this. Any exceptions
-// which make it to main() uncaught, and do not derive from this, are a bug. This exception should
+// which make it to `main()` uncaught, and do not derive from this, are a bug. This exception should
 // NOT be thrown, only caught.
 {
     public:

@@ -26,6 +26,7 @@ vector<string> load_lines(const string& path, bool UNIX)
     {
         std::stringstream ss;
         char error[256];
+        // TODO Change this line and it will compile on other operating systems.
         strerror_s(error, sizeof(error), errno);
         ss << "File at '" << path << "' could not be opened for reading: " << error;
         throw exc::file(ss.str());

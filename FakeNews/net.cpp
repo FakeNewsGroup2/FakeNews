@@ -42,11 +42,6 @@ Address::Address(const string& address): _full(address)
     _request  = m[6];
 }
 
-const string& Address::protocol() { return _protocol; }
-const string& Address::resource() { return _resource; }
-const string& Address::request()  { return _request;  }
-const string& Address::full()     { return _full;     }
-
 std::string get_file(const std::string& address)
 {
     CURL* handle = curl_easy_init();
