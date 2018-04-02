@@ -413,8 +413,8 @@ int main(int argc, char* argv[])
 	CURL *curl;
 	FILE *fp;
 	CURLcode res;
-	string url = "http://www.google.com";
-	char outfilename[FILENAME_MAX] = "./MyText.txt";
+	string url = "http://www.eelslap.com";
+	char outfilename[FILENAME_MAX] = "./HTTPContent.txt";
 	curl = curl_easy_init();
 	if (curl) {
 		fp = fopen(outfilename, "wb");
@@ -425,6 +425,61 @@ int main(int argc, char* argv[])
 		curl_easy_cleanup(curl);
 		fclose(fp);
 	}
+
+	
+	const int hitCount = 9;
+	string hitList[hitCount];
+	int hits = 0;
+
+	ifstream file("HitList.txt");
+	if (file.is_open())
+	{
+		
+
+		for (int i = 0; i < hitCount; ++i)
+		{
+			file >> hitList[i];
+		}
+		
+
+	}
+
+	string search;
+	ifstream inFile;
+	string line;
+
+	inFile.open("HTTPContent.txt");
+
+	if (!inFile) {
+		cout << "Unable to open file" << endl;
+		exit(1);
+	}
+
+	for (int i = 0; i < hitCount; ++i)
+	{
+
+
+		search = hitList[i];
+
+
+		size_t pos;
+		while (inFile.good())
+		{
+			getline(inFile, line); // get line from file
+			pos = line.find(search); // search
+			if (pos != string::npos) // string::npos is returned if string is not found
+			{
+				cout << hitList[i];
+				cout << "Found!";
+				hits++;
+				break;
+			}
+		}
+		
+	}
+	cout << "HitList word matches: " << hits;
+	
+
 	system("PAUSE");
 	
 	Training trainData("trainingData.txt");
