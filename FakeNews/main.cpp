@@ -1,6 +1,3 @@
-#define _CRT_SECURE_NO_DEPRECATE
-#pragma warning (disable : 4996)
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -66,12 +63,6 @@ void init()
 // Throws `exc::init` if a library failed to initialise.
 { if (curl_global_init(CURL_GLOBAL_DEFAULT)) throw exc::init("Could not initialise libcurl"); }
 
-size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-	size_t written;
-	written = fwrite(ptr, size, nmemb, stream);
-	return written;
-}
-
 // Shuts down any libraries.
 void cleanup() { curl_global_cleanup(); }
 
@@ -84,238 +75,6 @@ void die(const string& msg)
     cleanup();
     exit(1);
 }
-
-
-	class Training
-	{
-	public:
-		Training(const string filename);
-		bool isEof(void) { return n_trainingDataFile.eof(); }
-		void getStructure(vector<unsigned> &structure);
-		unsigned getNextInputs(vector<double> &inputVals);
-		unsigned getTargetOutputs(vector<double> &targetOutputVals);
-	private:
-		ifstream n_trainingDataFile;
-	};
-
-	void Training::getStructure(vector<unsigned> &Structure)
-	{
-		string line;
-		string label;
-		getline(n_trainingDataFile, line);
-		std::stringstream ss(line);
-		ss >> label;
-		if (this->isEof() || label.compare("topology:") != 0) {
-			abort();
-		}
-		while (!ss.eof()) {
-			unsigned n;
-			ss >> n;
-			Structure.push_back(n);
-		}
-		return;
-	}
-	Training::Training(const string filename)
-	{
-		n_trainingDataFile.open(filename.c_str());
-	}
-	unsigned Training::getNextInputs(vector<double> &inputVals)
-	{
-		inputVals.clear();
-		string line;
-		getline(n_trainingDataFile, line);
-		std::stringstream ss(line);
-		string label;
-		ss >> label;
-		if (label.compare("in:") == 0) {
-			double oneValue;
-			while (ss >> oneValue) {
-				inputVals.push_back(oneValue);
-			}
-		}
-		return inputVals.size();
-	}
-	unsigned Training::getTargetOutputs(vector<double> &targetOutputVals)
-	{
-		targetOutputVals.clear();
-		string line;
-		getline(n_trainingDataFile, line);
-		std::stringstream ss(line);
-		string label;
-		ss >> label;
-		if (label.compare("out:") == 0) {
-			double oneValue;
-			while (ss >> oneValue) {
-				targetOutputVals.push_back(oneValue);
-			}
-		}
-		return targetOutputVals.size();
-	}
-	struct Weights
-	{
-		double nodeweight;
-		double nodedeltaWeight;
-	};
-	class A_Neuron;
-	typedef vector<A_Neuron> Layer;
-	class A_Neuron
-	{
-	public:
-		A_Neuron(unsigned numOutputs, unsigned myIndex);
-		void setOutputVal(double val) { n_outputVal = val; }
-		double getOutputVal(void) const { return n_outputVal; }
-		void feedForward(const Layer &prevLayer);
-		void calculateOutputGradients(double targetVal);
-		void calculateHiddenGradients(const Layer &nextLayer);
-		void updateInputWeights(Layer &prevLayer);
-
-	private:
-		static double eta;
-		static double alpha;
-		static double transferFunction(double x);
-		static double transferFunctionDerivative(double x);
-		static double randomWeight(void) { return rand() / double(RAND_MAX); }
-		double sumDOW(const Layer &nextLayer) const;
-		double n_outputVal;
-		vector<Weights> n_outputWeights;
-		unsigned n_myIndex;
-		double n_gradient;
-	};
-	double A_Neuron::eta = 0.15;
-	double A_Neuron::alpha = 0.5;
-	void A_Neuron::updateInputWeights(Layer &prevLayer)
-	{
-		for (unsigned n = 0; n < prevLayer.size(); ++n) {
-			A_Neuron &neuron = prevLayer[n];
-			double oldDeltaWeight = neuron.n_outputWeights[n_myIndex].nodedeltaWeight;
-			double newDeltaWeight = eta * neuron.getOutputVal() * n_gradient + alpha * oldDeltaWeight;
-			neuron.n_outputWeights[n_myIndex].nodedeltaWeight = newDeltaWeight;
-			neuron.n_outputWeights[n_myIndex].nodeweight += newDeltaWeight;
-		}
-	}
-	double A_Neuron::sumDOW(const Layer &nextLayer) const {
-		double sum = 0.0;
-		for (unsigned n = 0; n < nextLayer.size() - 1; ++n) { sum += n_outputWeights[n].nodeweight * nextLayer[n].n_gradient; }
-		return sum;
-	}
-	void A_Neuron::calculateHiddenGradients(const Layer &nextLayer) { double dow = sumDOW(nextLayer); n_gradient = dow * A_Neuron::transferFunctionDerivative(n_outputVal); }
-	void A_Neuron::calculateOutputGradients(double targetVal) { double delta = targetVal - n_outputVal; n_gradient = delta * A_Neuron::transferFunctionDerivative(n_outputVal); }
-	double A_Neuron::transferFunction(double x) { return tanh(x); }
-	double A_Neuron::transferFunctionDerivative(double x) { return 1.0 - x * x; }
-	void A_Neuron::feedForward(const Layer &prevLayer)
-	{
-		double sum = 0.0;
-		for (unsigned n = 0; n < prevLayer.size(); ++n) {
-			sum += prevLayer[n].getOutputVal() *
-				prevLayer[n].n_outputWeights[n_myIndex].nodeweight;
-		}
-
-		n_outputVal = A_Neuron::transferFunction(sum);
-	}
-	A_Neuron::A_Neuron(unsigned numOutputs, unsigned myIndex)
-	{
-		for (unsigned c = 0; c < numOutputs; ++c) {
-			n_outputWeights.push_back(Weights());
-			n_outputWeights.back().nodeweight = randomWeight();
-		}
-		n_myIndex = myIndex;
-	}
-	class Network
-	{
-	public:
-		Network(const vector<unsigned> &Structure);
-		void feedForward(const vector<double> &inputVals);
-		void backProp(const vector<double> &targetVals);
-		void getResults(vector<double> &resultVals) const;
-		double getRecentAverageError(void) const { return n_recentAverageError; }
-
-	private:
-		vector<Layer> n_layers;
-		double n_error;
-		double n_recentAverageError;
-		static double n_recentAverageSmoothingFactor;
-	};
-	double Network::n_recentAverageSmoothingFactor = 100.0;
-	void Network::getResults(vector<double> &resultVals) const
-	{
-		resultVals.clear();
-		for (unsigned n = 0; n < n_layers.back().size() - 1; ++n) {
-			resultVals.push_back(n_layers.back()[n].getOutputVal());
-		}
-	}
-	void Network::backProp(const vector<double> &targetVals)
-	{
-		Layer &outputLayer = n_layers.back();
-		n_error = 0.0;
-		for (unsigned n = 0; n < outputLayer.size() - 1; ++n) {
-			double delta = targetVals[n] - outputLayer[n].getOutputVal();
-			n_error += delta * delta;
-		}
-		n_error /= outputLayer.size() - 1;
-		n_error = sqrt(n_error);
-		n_recentAverageError =
-			(n_recentAverageError * n_recentAverageSmoothingFactor + n_error)
-			/ (n_recentAverageSmoothingFactor + 1.0);
-		for (unsigned n = 0; n < outputLayer.size() - 1; ++n) {
-			outputLayer[n].calculateOutputGradients(targetVals[n]);
-		}
-		for (unsigned layerNum = n_layers.size() - 2; layerNum > 0; --layerNum) {
-			Layer &hiddenLayer = n_layers[layerNum];
-			Layer &nextLayer = n_layers[layerNum + 1];
-
-			for (unsigned n = 0; n < hiddenLayer.size(); ++n) {
-				hiddenLayer[n].calculateHiddenGradients(nextLayer);
-			}
-		}
-		for (unsigned layerNum = n_layers.size() - 1; layerNum > 0; --layerNum) {
-			Layer &layer = n_layers[layerNum];
-			Layer &prevLayer = n_layers[layerNum - 1];
-			for (unsigned n = 0; n < layer.size() - 1; ++n) {
-				layer[n].updateInputWeights(prevLayer);
-			}
-		}
-	}
-	void Network::feedForward(const vector<double> &inputVals)
-	{
-		assert(inputVals.size() == n_layers[0].size() - 1);
-		for (unsigned i = 0; i < inputVals.size(); ++i) {
-			n_layers[0][i].setOutputVal(inputVals[i]);
-		}
-		for (unsigned layerNum = 1; layerNum < n_layers.size(); ++layerNum) {
-			Layer &prevLayer = n_layers[layerNum - 1];
-			for (unsigned n = 0; n < n_layers[layerNum].size() - 1; ++n) {
-				n_layers[layerNum][n].feedForward(prevLayer);
-			}
-		}
-	}
-	Network::Network(const vector<unsigned> &Structure)
-	{
-		unsigned numLayers = Structure.size();
-		for (unsigned layerNum = 0; layerNum < numLayers; ++layerNum) {
-			n_layers.push_back(Layer());
-			unsigned numOutputs = layerNum == Structure.size() - 1 ? 0 : Structure[layerNum + 1];
-			for (unsigned neuronNum = 0; neuronNum <= Structure[layerNum]; ++neuronNum) {
-				n_layers.back().push_back(A_Neuron(numOutputs, neuronNum));
-				cout << "Neuron created" << endl;
-			}
-			n_layers.back().back().setOutputVal(1.0);
-		}
-	}
-	void showVectorVals(string label, vector<double> &v)
-	{
-		cout << label << " ";
-		for (unsigned i = 0; i < v.size(); ++i) {
-			cout << v[i] << " ";
-		}
-		cout << endl;
-	}
-
-
-
-
-
-
-
 
 int main(int argc, char* argv[])
 {
@@ -358,12 +117,6 @@ int main(int argc, char* argv[])
         "Due to some absolutely gr8 teamwork, Group 2 have passed their assignment.",
         net::Address("http://www.legit_site.com/articles/group2.html")
     );
-	article::Article input_one
-	(
-		"Breaking News: Group 2 Passes Assignment",
-		"Due to some absolutely gr8 teamwork, Group 2 have passed their assignment.",
-		net::Address(addresses[0])
-	);
 
     // Evaluate it using black/whitelists.
     // We use a pointer because there is no default constructor and we want to wrap the creation in
@@ -392,7 +145,7 @@ int main(int argc, char* argv[])
 	try
 	{
 		bwe2 = std::shared_ptr<estimator::BlackWhiteEstimator>
-			(new estimator::BlackWhiteEstimator(&input_one, "blacklist.txt", "whitelist.txt"));
+			(new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
 	}
 
 	catch (const exc::exception& e) { die(e.what()); }
@@ -406,83 +159,54 @@ int main(int argc, char* argv[])
     // estimator.article(my_new_article).estimate();
     // estimator.article(another_new_article).estimate();
 
-    cleanup();
+
     // system("pause"); // Please no.... just press Ctrl-F5 to run the program instead.
                         // (Or run it with command prompt as nature intended...)
-	system("PAUSE");
-	CURL *curl;
-	FILE *fp;
-	CURLcode res;
-	string url = "http://www.eelslap.com";
-	char outfilename[FILENAME_MAX] = "./HTTPContent.txt";
-	curl = curl_easy_init();
-	if (curl) {
-		fp = fopen(outfilename, "wb");
-		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-		res = curl_easy_perform(curl);
-		curl_easy_cleanup(curl);
-		fclose(fp);
-	}
 
+    // Get the page.
+	string http_content;
+
+    try                             { http_content = net::get_file("http://eelslap.com"); }
+    catch (const exc::exception& e) { die(e.what());                                      }
+
+    // (Make the page contents upper case, then make the search terms upper case, and bingo,
+    // case-insensitive search.)
+    for (char& c : http_content) c = toupper(c);
+
+    // Load the search terms from a file, one per line.
+    vector<string> hit_list;
+
+    string path = "HitList.txt";
+	ifstream file(path);
 	
-	const int hitCount = 9;
-	string hitList[hitCount];
-	int hits = 0;
+    // TODO Better error message.
+    if (!file.good()) die(string("Could not open file '") + path + string("' for reading.'"));
 
-	ifstream file("HitList.txt");
-	if (file.is_open())
-	{
-		
+    // Load each search term, converting to upper case as we go.
+    for (string line; std::getline(file, line);)
+    {
+        for (char& c : line) c = toupper(c);
+        hit_list.emplace_back(line);
+    }
 
-		for (int i = 0; i < hitCount; ++i)
-		{
-			file >> hitList[i];
-		}
-		
+    // For each word in `hit_list`, search for it, and count it once if any occurrences are found.
+    size_t hits = 0;
 
-	}
+    for (const string& s : hit_list)
+    {
+        if (http_content.find(s) != string::npos)
+        {
+            ++hits;
+            continue;
+        }
+    }
 
-	string search;
-	ifstream inFile;
-	string line;
-
-	inFile.open("HTTPContent.txt");
-
-	if (!inFile) {
-		cout << "Unable to open file" << endl;
-		exit(1);
-	}
-
-	for (int i = 0; i < hitCount; ++i)
-	{
-
-
-		search = hitList[i];
-
-
-		size_t pos;
-		while (inFile.good())
-		{
-			getline(inFile, line); // get line from file
-			pos = line.find(search); // search
-			if (pos != string::npos) // string::npos is returned if string is not found
-			{
-				cout << hitList[i];
-				cout << "Found!";
-				hits++;
-				break;
-			}
-		}
-		
-	}
 	cout << "HitList word matches: " << hits;
 	
-
 	system("PAUSE");
 	
-	Training trainData("trainingData.txt");
+    // TODO Make this work again.
+	/*Training trainData("trainingData.txt");
 	vector<unsigned> Structure;
 	trainData.getStructure(Structure);
 	Network myNetwork(Structure);
@@ -503,9 +227,11 @@ int main(int argc, char* argv[])
 		assert(targetVals.size() == Structure.back());
 		myNetwork.backProp(targetVals);
 		cout << "Net recent average error: " << myNetwork.getRecentAverageError() << endl;
-	}
+	}*/
+
 	cout << endl << "Done" << endl;
 	system("pause");
+    cleanup();
 	return 0;
 
 
