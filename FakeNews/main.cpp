@@ -17,6 +17,7 @@
 #include "net.h"
 #include "Article.h"
 #include "BlackWhiteEstimator.h"
+#include "NeuralNet.h"
 
 
 
@@ -74,6 +75,13 @@ void die(const string& msg)
     cerr << "Error: " << msg << endl;
     cleanup();
     exit(1);
+}
+
+template<typename T> void display_vector(const string& label, const vector<T>& vec)
+{
+    cout << label;
+    for (const T& v : vec) cout << ' ' << v;
+    cout << endl;
 }
 
 int main(int argc, char* argv[])
@@ -205,11 +213,11 @@ int main(int argc, char* argv[])
 	
 	system("PAUSE");
 	
-    // TODO Make this work again.
-	/*Training trainData("trainingData.txt");
+    // TODO Put this somewhere not in `main()`.
+	neuralnet::Training trainData("trainingData.txt");
 	vector<unsigned> Structure;
 	trainData.getStructure(Structure);
-	Network myNetwork(Structure);
+	neuralnet::Network myNetwork(Structure);
 	vector<double> inputVals, targetVals, resultVals;
 	int trainingPass = 0;
 	while (!trainData.isEof()) {
@@ -218,16 +226,16 @@ int main(int argc, char* argv[])
 		if (trainData.getNextInputs(inputVals) != Structure[0]) {
 			break;
 		}
-		showVectorVals(": Inputs:", inputVals);
+        display_vector("Inputs:", inputVals);
 		myNetwork.feedForward(inputVals);
 		myNetwork.getResults(resultVals);
-		showVectorVals("Outputs:", resultVals);
+        display_vector("Outputs:", resultVals);
 		trainData.getTargetOutputs(targetVals);
-		showVectorVals("Targets:", targetVals);
+        display_vector("Targets:", targetVals);
 		assert(targetVals.size() == Structure.back());
 		myNetwork.backProp(targetVals);
 		cout << "Net recent average error: " << myNetwork.getRecentAverageError() << endl;
-	}*/
+	}
 
 	cout << endl << "Done" << endl;
 	system("pause");

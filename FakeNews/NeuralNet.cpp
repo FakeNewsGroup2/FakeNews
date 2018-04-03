@@ -1,7 +1,8 @@
 // Source: David Miller
-//https://www.youtube.com/watch?v=KkwX7FkLfug
+// https://www.youtube.com/watch?v=KkwX7FkLfug
 // 'tutorial' video used for code production
 
+#include "NeuralNet.h"
 
 #include <vector>
 #include <iostream>
@@ -10,18 +11,14 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+
 using namespace std;
-class Training
+
+namespace fakenews
 {
-public:
-	Training(const string filename);
-	bool isEof(void) { return n_trainingDataFile.eof(); }
-	void getStructure(vector<unsigned> &structure);
-	unsigned getNextInputs(vector<double> &inputVals);
-	unsigned getTargetOutputs(vector<double> &targetOutputVals);
-private:
-	ifstream n_trainingDataFile;
-};
+
+namespace neuralnet
+{
 
 void Training::getStructure(vector<unsigned> &Structure)
 {
@@ -40,11 +37,11 @@ void Training::getStructure(vector<unsigned> &Structure)
 	}
 	return;
 }
-Training::Training(const string filename)
+Training::Training(const string &filename)
 {
 	n_trainingDataFile.open(filename.c_str());
 }
-unsigned Training::getNextInputs(vector<double> &inputVals)
+size_t Training::getNextInputs(vector<double> &inputVals)
 {
 	inputVals.clear();
 	string line;
@@ -60,7 +57,7 @@ unsigned Training::getNextInputs(vector<double> &inputVals)
 	}
 	return inputVals.size();
 }
-unsigned Training::getTargetOutputs(vector<double> &targetOutputVals)
+size_t Training::getTargetOutputs(vector<double> &targetOutputVals)
 {
 	targetOutputVals.clear();
 	string line;
@@ -76,36 +73,7 @@ unsigned Training::getTargetOutputs(vector<double> &targetOutputVals)
 	}
 	return targetOutputVals.size();
 }
-struct Weights
-{
-	double nodeweight;
-	double nodedeltaWeight;
-};
-class A_Neuron;
-typedef vector<A_Neuron> Layer;
-class A_Neuron
-{
-public:
-	A_Neuron(unsigned numOutputs, unsigned myIndex);
-	void setOutputVal(double val) { n_outputVal = val; }
-	double getOutputVal(void) const { return n_outputVal; }
-	void feedForward(const Layer &prevLayer);
-	void calculateOutputGradients(double targetVal);
-	void calculateHiddenGradients(const Layer &nextLayer);
-	void updateInputWeights(Layer &prevLayer);
 
-private:
-	static double eta;  
-	static double alpha; 
-	static double transferFunction(double x);
-	static double transferFunctionDerivative(double x);
-	static double randomWeight(void) { return rand() / double(RAND_MAX); }
-	double sumDOW(const Layer &nextLayer) const;
-	double n_outputVal;
-	vector<Weights> n_outputWeights;
-	unsigned n_myIndex;
-	double n_gradient;
-};
 double A_Neuron::eta = 0.15;    
 double A_Neuron::alpha = 0.5;  
 void A_Neuron::updateInputWeights(Layer &prevLayer)
@@ -143,21 +111,7 @@ A_Neuron::A_Neuron(unsigned numOutputs, unsigned myIndex)
 	}
 	n_myIndex = myIndex;
 }
-class Network
-{
-public:
-	Network(const vector<unsigned> &Structure);
-	void feedForward(const vector<double> &inputVals);
-	void backProp(const vector<double> &targetVals);
-	void getResults(vector<double> &resultVals) const;
-	double getRecentAverageError(void) const { return n_recentAverageError; }
 
-private:
-	vector<Layer> n_layers; 
-	double n_error;
-	double n_recentAverageError;
-	static double n_recentAverageSmoothingFactor;
-};
 double Network::n_recentAverageSmoothingFactor = 100.0; 
 void Network::getResults(vector<double> &resultVals) const
 {
@@ -182,7 +136,7 @@ void Network::backProp(const vector<double> &targetVals)
 	for (unsigned n = 0; n < outputLayer.size() - 1; ++n) {
 		outputLayer[n].calculateOutputGradients(targetVals[n]);
 	}
-	for (unsigned layerNum = n_layers.size() - 2; layerNum > 0; --layerNum) {
+	for (size_t layerNum = n_layers.size() - 2; layerNum > 0; --layerNum) {
 		Layer &hiddenLayer = n_layers[layerNum];
 		Layer &nextLayer = n_layers[layerNum + 1];
 
@@ -190,7 +144,7 @@ void Network::backProp(const vector<double> &targetVals)
 			hiddenLayer[n].calculateHiddenGradients(nextLayer);
 		}
 	}
-	for (unsigned layerNum = n_layers.size() - 1; layerNum > 0; --layerNum) {
+	for (size_t layerNum = n_layers.size() - 1; layerNum > 0; --layerNum) {
 		Layer &layer = n_layers[layerNum];
 		Layer &prevLayer = n_layers[layerNum - 1];
 		for (unsigned n = 0; n < layer.size() - 1; ++n) {
@@ -213,7 +167,7 @@ void Network::feedForward(const vector<double> &inputVals)
 }
 Network::Network(const vector<unsigned> &Structure)
 {
-	unsigned numLayers = Structure.size();
+	size_t numLayers = Structure.size();
 	for (unsigned layerNum = 0; layerNum < numLayers; ++layerNum) {
 		n_layers.push_back(Layer());
 		unsigned numOutputs = layerNum == Structure.size() - 1 ? 0 : Structure[layerNum + 1];
@@ -224,39 +178,7 @@ Network::Network(const vector<unsigned> &Structure)
 		n_layers.back().back().setOutputVal(1.0);
 	}
 }
-void showVectorVals(string label, vector<double> &v)
-{
-	cout << label << " ";
-	for (unsigned i = 0; i < v.size(); ++i) {
-		cout << v[i] << " ";
-	}
-	cout << endl;
+
 }
-int main()
-{
-	Training trainData("trainingData.txt");
-	vector<unsigned> Structure;
-	trainData.getStructure(Structure);
-	Network myNetwork(Structure);
-	vector<double> inputVals, targetVals, resultVals;
-	int trainingPass = 0;
-	while (!trainData.isEof()) {
-		++trainingPass;
-		cout << endl << "Pass " << trainingPass;
-		if (trainData.getNextInputs(inputVals) != Structure[0]) {
-			break;
-		}
-		showVectorVals(": Inputs:", inputVals);
-		myNetwork.feedForward(inputVals);
-		myNetwork.getResults(resultVals);
-		showVectorVals("Outputs:", resultVals);
-		trainData.getTargetOutputs(targetVals);
-		showVectorVals("Targets:", targetVals);
-		assert(targetVals.size() == Structure.back());
-		myNetwork.backProp(targetVals);
-		cout << "Net recent average error: "
-			<< myNetwork.getRecentAverageError() << endl;
-	}
-	cout << endl << "Done" << endl;
-	system("pause");
+
 }

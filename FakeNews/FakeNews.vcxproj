@@ -134,6 +134,7 @@
     <ClCompile Include="fs.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="net.cpp" />
+    <ClCompile Include="NeuralNet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Article.h" />
@@ -143,6 +144,7 @@
     <ClInclude Include="fs.h" />
     <ClInclude Include="net.h" />
     <ClInclude Include="ExampleEstimator.h" />
+    <ClInclude Include="NeuralNet.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="blacklist.txt">
