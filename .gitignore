@@ -1,7 +1,5 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs
-/FakeNews/x64/Debug/FakeNews.tlog
-/FakeNews/x64/Debug
+﻿/.vs/
+/FakeNews/x64/Debug/
+/lib/
+/FakeNews/curl/
+/x64/
