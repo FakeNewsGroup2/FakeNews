@@ -24,6 +24,7 @@ class Estimator
 {
     public:
     Estimator(const article::Article* article): _article(article) { }
+    virtual ~Estimator() { }
 
     Estimator& article(const article::Article* article)
     {

@@ -51,48 +51,67 @@ using std::string;
 using std::vector;
 using std::ifstream;
 
-
-
 using namespace fakenews;
 
-// TODO Instead of having `init()`, `cleanup()` and `die()`, put the whole program into a class
-// which initialises/cleans up in its constructor/destructor. Then wrap everything in `main()`
-// (which should be almost nothing) in a single try/catch block.
-
-void init()
-// Initialises the libraries used in this program.
-// Throws `exc::init` if a library failed to initialise.
-{ if (curl_global_init(CURL_GLOBAL_DEFAULT)) throw exc::init("Could not initialise libcurl"); }
-
-// Shuts down any libraries.
-void cleanup() { curl_global_cleanup(); }
-
-void die(const string& msg)
-// Prints the error message, cleans up, and quits the program. Purely for convenience (and so that
-// the error messages are consistent.)
-// msg: The error message to print. Should probably be `exc::exception.what()`.
+// We have a class to wrap the whole program, for two reasons:
+// We can initialise/de-initialise libraries cleanly and safely using RAII (constructor/destructor)
+// We can throw exceptions and catch them in `main()`, so we only catch/log errors in one place.
+class FakeNews
 {
-    cerr << "Error: " << msg << endl;
-    cleanup();
-    exit(1);
-}
+    public:
+    FakeNews()
+    { if (curl_global_init(CURL_GLOBAL_DEFAULT)) throw exc::init("Could not initialise libcurl"); }
 
-template<typename T> void display_vector(const string& label, const vector<T>& vec)
-{
-    cout << label;
-    for (const T& v : vec) cout << ' ' << v;
-    cout << endl;
-}
+    ~FakeNews()
+    { curl_global_cleanup(); }
+
+    // The functionality of this program should really be broken up into smaller functions.
+    // This might throw anything deriving from `exc::exception`.
+    void run(int argc, char* argv[]);
+
+    private:
+    template<typename T> void display_vector(const string& label, const vector<T>& vec)
+    {
+        cout << label;
+        for (const T& v : vec) cout << ' ' << v;
+        cout << endl;
+    }
+
+    void pause()
+    {
+        cout << "Press Enter to continue..." << endl;
+        std::cin.clear();
+        std::cin.get();
+    }
+};
 
 int main(int argc, char* argv[])
 {
+    std::shared_ptr<FakeNews> fn;
+
+    try
+    {
+        fn = std::shared_ptr<FakeNews>(new FakeNews());
+        fn->run(argc, argv);
+    }
+
+    catch (const exc::exception& e)
+    {
+        cerr << "Error: " << e.what() << endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+
+void FakeNews::run(int argc, char* argv[])
+{
+    // We don't bother catching any `exc::exception`s in this method. Let the caller handle them.
     vector<net::Address> addresses;
 
-    try                             { init();        }
-    catch (const exc::exception& e) { die(e.what()); }
-
-    try { for (int i = 1; i < argc; ++i) addresses.emplace_back(argv[i]); }
-    catch (const exc::exception& e) { die(e.what()); }
+    for (int i = 1; i < argc; ++i)
+        addresses.emplace_back(argv[i]);
 
     // If there were no arguments given, prompt the user for URLs.
     if (argc == 1)
@@ -105,9 +124,7 @@ int main(int argc, char* argv[])
             cout << "(URL " << i << ") > " << std::flush;
             getline(std::cin, line);
             if (line.empty()) break;
-
-            try                             { addresses.emplace_back(line); }
-            catch (const exc::exception& e) { die(e.what());                }
+            addresses.emplace_back(line);
         }
 
         cout << endl;
@@ -132,13 +149,8 @@ int main(int argc, char* argv[])
     // We use a `shared_ptr` so that if there's an uncaught exception, there's no memory leak.
     std::shared_ptr<estimator::BlackWhiteEstimator> bwe;
 
-    try
-    {
-        bwe = std::shared_ptr<estimator::BlackWhiteEstimator>
-            (new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
-    }
-
-    catch (const exc::exception& e) { die(e.what()); }
+    bwe = std::shared_ptr<estimator::BlackWhiteEstimator>
+        (new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
 
     estimator::Estimate result = bwe->estimate();
 
@@ -150,13 +162,8 @@ int main(int argc, char* argv[])
 
 	std::shared_ptr<estimator::BlackWhiteEstimator> bwe2;
 
-	try
-	{
-		bwe2 = std::shared_ptr<estimator::BlackWhiteEstimator>
-			(new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
-	}
-
-	catch (const exc::exception& e) { die(e.what()); }
+    bwe2 = std::shared_ptr<estimator::BlackWhiteEstimator>
+        (new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
 
 	estimator::Estimate result2 = bwe2->estimate();
 
@@ -167,15 +174,10 @@ int main(int argc, char* argv[])
     // estimator.article(my_new_article).estimate();
     // estimator.article(another_new_article).estimate();
 
-
-    // system("pause"); // Please no.... just press Ctrl-F5 to run the program instead.
-                        // (Or run it with command prompt as nature intended...)
-
     // Get the page.
 	string http_content;
 
-    try                             { http_content = net::get_file("http://eelslap.com"); }
-    catch (const exc::exception& e) { die(e.what());                                      }
+    http_content = net::get_file("http://eelslap.com");
 
     // (Make the page contents upper case, then make the search terms upper case, and bingo,
     // case-insensitive search.)
@@ -187,8 +189,9 @@ int main(int argc, char* argv[])
     string path = "HitList.txt";
 	ifstream file(path);
 	
-    // TODO Better error message.
-    if (!file.good()) die(string("Could not open file '") + path + string("' for reading.'"));
+    // TODO Better error message using strerror.
+    if (!file.good())
+    { throw exc::file(string("Could not open file '") + path + string("' for reading")); }
 
     // Load each search term, converting to upper case as we go.
     for (string line; std::getline(file, line);)
@@ -211,7 +214,7 @@ int main(int argc, char* argv[])
 
 	cout << "HitList word matches: " << hits;
 	
-	system("PAUSE");
+    pause();
 	
     // TODO Put this somewhere not in `main()`.
 	neuralnet::Training trainData("trainingData.txt");
@@ -222,10 +225,8 @@ int main(int argc, char* argv[])
 	int trainingPass = 0;
 	while (!trainData.isEof()) {
 		++trainingPass;
-		cout << endl << "Pass " << trainingPass;
-		if (trainData.getNextInputs(inputVals) != Structure[0]) {
-			break;
-		}
+		cout << "\nPass " << trainingPass << endl;
+		if (trainData.getNextInputs(inputVals) != Structure[0]) break;
         display_vector("Inputs:", inputVals);
 		myNetwork.feedForward(inputVals);
 		myNetwork.getResults(resultVals);
@@ -238,9 +239,6 @@ int main(int argc, char* argv[])
 	}
 
 	cout << endl << "Done" << endl;
-	system("pause");
-    cleanup();
-	return 0;
 
-
+    pause();
 }
