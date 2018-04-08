@@ -18,7 +18,7 @@ namespace fakenews
 // Behaves like GNU strerror_r.
 char* error(char* buf, size_t len);
 
-#ifdef _MSC_VER
+#if defined _MSC_VER || defined __MINGW32__
 char* error(char* buf, size_t len)
 {
     strerror_s(buf, len, errno);

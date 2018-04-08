@@ -37,7 +37,7 @@ void Training::getStructure(vector<unsigned> &Structure)
 	}
 	return;
 }
-Training::Training(const string &filename)
+Training::Training(const string &filename): n_trainingDataFile()
 {
 	n_trainingDataFile.open(filename.c_str());
 }
@@ -103,7 +103,11 @@ void A_Neuron::feedForward(const Layer &prevLayer)
 
 	n_outputVal = A_Neuron::transferFunction(sum);
 }
-A_Neuron::A_Neuron(unsigned numOutputs, unsigned myIndex)
+A_Neuron::A_Neuron(unsigned numOutputs, unsigned myIndex):
+    n_outputVal(0),
+    n_outputWeights(),
+    n_myIndex(0),
+    n_gradient(0)
 {
 	for (unsigned c = 0; c < numOutputs; ++c) {
 		n_outputWeights.push_back(Weights());
@@ -165,7 +169,10 @@ void Network::feedForward(const vector<double> &inputVals)
 		}
 	}
 }
-Network::Network(const vector<unsigned> &Structure)
+Network::Network(const vector<unsigned> &Structure):
+    n_layers(),
+    n_error(0),
+    n_recentAverageError(0)
 {
 	size_t numLayers = Structure.size();
 	for (unsigned layerNum = 0; layerNum < numLayers; ++layerNum) {

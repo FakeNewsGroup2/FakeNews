@@ -24,7 +24,11 @@ struct sstring { char* data; size_t size; };
 // Write callback function when receiving data from libcurl. Purely part of `get_file()`.
 size_t write_callback(char* p, size_t size, size_t nmemb, void* data);
 
-Address::Address(const string& address): _full(address)
+Address::Address(const string& address):
+    _protocol(),
+    _resource(),
+    _request(),
+    _full(address)
 {
     // TODO This regex isn't perfect. It doesn't handle IPv6 addresses, usernames and passwords,
     // port numbers, and other (presumably unlikely) stuff.

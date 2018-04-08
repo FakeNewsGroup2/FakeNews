@@ -57,8 +57,8 @@ class BlackWhiteEstimator : public Estimator
     }
 
     private:
-    std::vector<std::string> _whitelist;
     std::vector<std::string> _blacklist;
+    std::vector<std::string> _whitelist;
 };
 
 }
