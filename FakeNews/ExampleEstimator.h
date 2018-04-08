@@ -11,18 +11,34 @@ namespace fakenews
 namespace estimator
 {
 
-// The `Estimator` class provides a variable named `_article` of the `Article` type. Right now, this
-// just contains three methods `heading()`, `contents()` and `address()` to get info about the
-// article. Look at 'net.h' at the `Address` type, because `address()` returns this, not a string.
 class ExampleEstimator : public Estimator
 {
     public:
+    // Example constructor with some extra things we want passed in.
+    ExampleEstimator(const article::Article* article, const string& extra_info):
+        Estimator(article),
+        _extra_info(extra_info)
+    { }
+
     Estimate estimate()
     {
         // Do something based on `_article.heading()`, `_article.contents()` and
-        // `_article.address()`.
-        return Estimate { 1.0, 1.0 }; // `veracity` = 1.0, `confidence` = 1.0
+        // `_article.address()`. These are data members of the parent class `Estimator`, and have 
+        // been set up for us.
+
+        // The heading and contents are `string`s, but please look at "net.h", at the `Address` 
+        // type, because `_article.address()` returns this.
+
+        // Let's say that after doing whatever it is we do, we've decided that this article is 100% 
+        // legitimate, and we're absolutely certain.
+
+        // `veracity` = 1.0, `confidence` = 1.0
+        // Please see "Estimator.h" for more details on `Estimate`.
+        return Estimate { 1.0, 1.0 };
     }
+
+    private:
+    string _extra_info; // Some extra data member we want to have passed into the constructor.
 };
 
 }
