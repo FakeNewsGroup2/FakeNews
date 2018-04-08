@@ -27,6 +27,9 @@
     <ClCompile Include="NeuralNet.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="HitListEstimator.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exc.h">
@@ -51,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="NeuralNet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HitListEstimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

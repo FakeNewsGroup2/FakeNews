@@ -68,14 +68,14 @@ Estimate HitListEstimator::estimate()
     // Hell, a long hitlist is pretty unreliable, but oh well.
 
     // +1 so that if we have no hits, we get 0. (I think.)
-    result.veracity = 1 - (1.0 / ((_upper.size() / 5.0) / (hits + 1)));
+    result.veracity = 1 - (1.0f / ((_upper.size() / 5.0f) / (hits + 1)));
 
     // This might not actually be that crappy. It's just 1 divided by the number of entries in the
     // hit list. Then we subtract that from 1. As we get more and more hitlist entries, the number
     // converges towards 1.
 
     // +1 so that if the hitlist is empty, we get 0.
-    result.confidence = 1 - (1.0 / (_hitlist.size() + 1));
+    result.confidence = 1 - (1.0f / (_hitlist.size() + 1));
 
     return result;
 }
