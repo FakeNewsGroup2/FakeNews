@@ -18,8 +18,7 @@
 #include "Article.h"
 #include "BlackWhiteEstimator.h"
 #include "NeuralNet.h"
-
-
+#include "HitListEstimator.h"
 
 #include <vector>
 #include <iostream>
@@ -146,13 +145,8 @@ void FakeNews::run(int argc, char* argv[])
     // Evaluate it using black/whitelists.
     // We use a pointer because there is no default constructor and we want to wrap the creation in
     // a try block.
-    // We use a `shared_ptr` so that if there's an uncaught exception, there's no memory leak.
-    std::shared_ptr<estimator::BlackWhiteEstimator> bwe;
-
-    bwe = std::shared_ptr<estimator::BlackWhiteEstimator>
-        (new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
-
-    estimator::Estimate result = bwe->estimate();
+    estimator::BlackWhiteEstimator bwe(&test_article, "blacklist.txt", "whitelist.txt");
+    estimator::Estimate result = bwe.estimate();
 
     cout << "For our test article, veracity is '" << result.veracity << ",' and confidence is '"
         << result.confidence << ".'" << endl;
@@ -160,59 +154,35 @@ void FakeNews::run(int argc, char* argv[])
     cout << "veracity:   0 = definitely fake, 1 = definitely true" << endl;
     cout << "confidence: 0 = can't estimate,  1 = we are certain"  << endl;
 
-	std::shared_ptr<estimator::BlackWhiteEstimator> bwe2;
-
-    bwe2 = std::shared_ptr<estimator::BlackWhiteEstimator>
-        (new estimator::BlackWhiteEstimator(&test_article, "blacklist.txt", "whitelist.txt"));
-
-	estimator::Estimate result2 = bwe2->estimate();
-
-	cout << "For input one, veracity is '" << result2.veracity << ",' and confidence is '"
-		<< result2.confidence << ".'" << endl;
-
-    // Only create one of each `Estimator`! To change the article, do this:
-    // estimator.article(my_new_article).estimate();
-    // estimator.article(another_new_article).estimate();
-
-    // Get the page.
-	string http_content;
-
-    http_content = net::get_file("http://eelslap.com");
-
-    // (Make the page contents upper case, then make the search terms upper case, and bingo,
-    // case-insensitive search.)
-    for (char& c : http_content) c = toupper(c);
-
-    // Load the search terms from a file, one per line.
-    vector<string> hit_list;
-
-    string path = "HitList.txt";
-	ifstream file(path);
-	
-    // TODO Better error message using strerror.
-    if (!file.good())
-    { throw exc::file(string("Could not open file '") + path + string("' for reading")); }
-
-    // Load each search term, converting to upper case as we go.
-    for (string line; std::getline(file, line);)
+    if (!addresses.empty())
     {
-        for (char& c : line) c = toupper(c);
-        hit_list.emplace_back(line);
+        article::Article input_one
+        (
+            "PLACEHOLDER HEADLINE",
+            "PLACEHOLDER CONTENT",
+            addresses[0]
+        );
+
+        result = bwe.article(&input_one).estimate();
+
+        cout << "For input one, veracity is '" << result.veracity << ",' and confidence is '"
+            << result.confidence << ".'" << endl;
     }
 
-    // For each word in `hit_list`, search for it, and count it once if any occurrences are found.
-    size_t hits = 0;
+    net::Address hl_article = net::Address("http://eelslap.com");
 
-    for (const string& s : hit_list)
-    {
-        if (http_content.find(s) != string::npos)
-        {
-            ++hits;
-            continue;
-        }
-    }
+    article::Article hit_list_test
+    (
+        "PLACEHOLDER HEADLINE",
+        net::get_file(hl_article.full()),
+        hl_article
+    );
 
-	cout << "HitList word matches: " << hits;
+    estimator::HitListEstimator hle(&hit_list_test, "HitList.txt");
+    result = hle.estimate();
+
+    cout << "For the hitlist test (" << hl_article.full() << "), veracity is '" << result.veracity
+        << ",' and confidence is '" << result.confidence << ".'" << endl;
 	
     pause();
 	
