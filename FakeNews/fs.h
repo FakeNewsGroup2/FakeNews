@@ -11,6 +11,10 @@ namespace fakenews
 namespace fs
 {
 
+// All this does is wraps strerror, so that it compiles with both MSVC, GCC, and MinGW.
+// Behaves like GNU strerror_r.
+char* error(char* buf, size_t len);
+
 // Loads a file, line by line.
 // path: The path to a text file to load.
 // UNIX: Whether to expect UNIX ('\n') line endings. Otherwise expects DOS ('\r\n'). Defaults to

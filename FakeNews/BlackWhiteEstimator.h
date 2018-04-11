@@ -33,6 +33,7 @@ class BlackWhiteEstimator : public Estimator
     {
         // TODO remove blank entries from the black/whitelist
         // TODO if there are any sites present in both lists, throw something
+        // TODO if any of them aren't a valid URL, do something
     }
 
     Estimate estimate()

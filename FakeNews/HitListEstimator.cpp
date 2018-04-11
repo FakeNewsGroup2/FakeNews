@@ -1,12 +1,17 @@
 #include <iostream>
+#include <iomanip>
+#include <algorithm>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 #include "HitListEstimator.h"
 
+#include "fs.h"
 #include "exc.h"
 
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::string;
 using std::vector;
@@ -24,19 +29,59 @@ HitListEstimator::HitListEstimator(const article::Article* article, const string
 {
     std::ifstream file(path);
 
-    // TODO Better error message using strerror.
-    if (!file.good())
-        throw exc::file(string("Could not open file '") + path + string("' for reading"));
+    if (!file)
+    {
+        char err[256];
+        std::stringstream ss;
+        ss << "Could not open file '" << path << "' for reading: " << fs::error(err, sizeof(err));
+        throw exc::file(ss.str());
+    }
 
     // Load each line into a vector, converting to upper case as we go.
-    // TODO Check for duplicates, and do something if two hitlist words are the same.
-    // TODO Do something if a line contains spaces or punctuation.
-    // TODO Do something if the hitlist is empty.
-    for (string line; std::getline(file, line);)
+    string line;
+
+    for (decltype(_hitlist.size()) i = 1; std::getline(file, line); ++i)
     {
-        for (char& c : line) c = toupper(c);
+        for (string::size_type j = 0; j < line.size(); ++j)
+        {
+            line[j] = toupper(line[j]);
+
+            if (string("ABCDEFGHIJKLMNOPQRSTUVWXYZ").find(line[j]) == string::npos)
+            {
+                // TODO Have a consistent way of doing this throughout the code.
+                // Prints error message with line and column like this:
+                // [L065, C005] in '/path/to/hitlist.txt': Invalid character '!' in hit list entry 
+                // 'word!'
+
+                std::stringstream ss;
+
+                ss << "[L"
+                    << std::setfill('0') << std::setw(3) << i
+                    << ", C"
+                    << std::setfill('0') << std::setw(3) << j + 1
+                    << "] in '" << path << "': Invalid character '" << line[j]
+                    << "' in hit list entry '" << line << "'";
+
+                throw exc::format(ss.str());
+            }
+        }
+
+        if (std::find(_hitlist.cbegin(), _hitlist.cend(), line) != _hitlist.cend())
+        {
+            std::stringstream ss;
+
+            ss << "[Warning]: [L"
+                << std::setfill('0') << std::setw(3) << i
+                << "] in '" << path << "': Duplicate entry '" << line << "' in hit list '" << path
+                << "'";
+
+            cerr << ss.str() << endl;
+        }
+
         _hitlist.emplace_back(line);
     }
+
+    if (_hitlist.empty()) cerr << "[Warning]: Hit list '" << path << "' is empty" << endl;
 
     // Make the article copy upper case.
     for (char& c : _upper) c = toupper(c);

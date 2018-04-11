@@ -14,9 +14,8 @@ using std::string;
 namespace fakenews
 {
 
-// All this does is wraps strerror, so that it compiles with both MSVC and GCC.
-// Behaves like GNU strerror_r.
-char* error(char* buf, size_t len);
+namespace fs
+{
 
 #if defined _MSC_VER || defined __MINGW32__
 char* error(char* buf, size_t len)
@@ -30,9 +29,6 @@ char* error(char* buf, size_t len)
     return strerror_r(errno, buf, len);
 }
 #endif
-
-namespace fs
-{
 
 vector<string> load_lines(const string& path, bool UNIX)
 {

@@ -86,12 +86,10 @@ class FakeNews
 
 int main(int argc, char* argv[])
 {
-    std::shared_ptr<FakeNews> fn;
-
     try
     {
-        fn = std::shared_ptr<FakeNews>(new FakeNews());
-        fn->run(argc, argv);
+        FakeNews fn;
+        fn.run(argc, argv);
     }
 
     catch (const exc::exception& e)
@@ -186,7 +184,7 @@ void FakeNews::run(int argc, char* argv[])
 	
     pause();
 	
-    // TODO Put this somewhere not in `main()`.
+    // TODO Put this away somewhere.
 	neuralnet::Training trainData("trainingData.txt");
 	vector<unsigned> Structure;
 	trainData.getStructure(Structure);
