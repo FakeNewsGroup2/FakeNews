@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="fs.cpp" />
     <ClCompile Include="HitListEstimator.cpp" />
+    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="net.cpp" />
     <ClCompile Include="NeuralNet.cpp" />
@@ -144,6 +145,8 @@
     <ClInclude Include="exc.h" />
     <ClInclude Include="fs.h" />
     <ClInclude Include="HitListEstimator.h" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="Logger.h" />
     <ClInclude Include="net.h" />
     <ClInclude Include="ExampleEstimator.h" />
     <ClInclude Include="NeuralNet.h" />

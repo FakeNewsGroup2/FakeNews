@@ -12,6 +12,7 @@
 #include "curl/easy.h"
 #include <cstdio>
 
+#include "log.h"
 #include "fs.h"
 #include "exc.h"
 #include "net.h"
@@ -86,6 +87,15 @@ class FakeNews
 
 int main(int argc, char* argv[])
 {
+    // Demonstrating the new loggers.
+    // There is `log::log`, `log::error`, `log::warning` and `log::success`
+
+    // All the loggers can take 0-3 arguments: file path, line number, column number.
+    log::log << "Demonstrating logging! Works like cout." << endl;
+    log::error("file.txt", 12, 34) << "Error in a file, at line 12 and column 34." << endl;
+    log::warning("file.txt") << "Warning in a file." << endl;
+    log::success("file.txt", 4321) << "This line succeeded! (For some reason.)" << endl;
+
     try
     {
         FakeNews fn;
@@ -206,7 +216,7 @@ void FakeNews::run(int argc, char* argv[])
 		cout << "Net recent average error: " << myNetwork.getRecentAverageError() << endl;
 	}
 
-	cout << endl << "Done" << endl;
+	cout << "\nDone" << endl;
 
     pause();
 }
