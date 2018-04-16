@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="fs.cpp" />
     <ClCompile Include="HitListEstimator.cpp" />
+    <ClCompile Include="log.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="net.cpp" />
