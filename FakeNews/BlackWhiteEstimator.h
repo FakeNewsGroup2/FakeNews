@@ -39,6 +39,7 @@ class BlackWhiteEstimator : public Estimator
     Estimate estimate()
     {
         // If we find the address in the whitelist, it's definitely legit.
+        // TODO Make this case-insensitive.
         if
         (
             std::find(_whitelist.begin(), _whitelist.end(), _article->address().resource())

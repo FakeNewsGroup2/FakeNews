@@ -1,2 +1,21 @@
-Whitelist test 1.
-Whitelist test 2.
+bbc.co.uk
+ft.com
+reuters.com
+tass.com
+elle.de
+dpa.com
+independent.co.uk
+theguardian.com
+telegraph.co.uk
+economist.com
+thetimes.co.uk
+nature.com
+nhk.or.jp
+aljazeera.com
+thestar.com
+cbsnews.com
+abcnews.com
+nbcnews.com
+foxnews.com
+cnn.com
+npr.org

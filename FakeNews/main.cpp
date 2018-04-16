@@ -195,7 +195,7 @@ void FakeNews::run(int argc, char* argv[])
     pause();
 	
     // TODO Put this away somewhere.
-	neuralnet::Training trainData("trainingData.txt");
+	neuralnet::Training trainData("training_data.txt");
 	vector<unsigned> Structure;
 	trainData.getStructure(Structure);
 	neuralnet::Network myNetwork(Structure);
