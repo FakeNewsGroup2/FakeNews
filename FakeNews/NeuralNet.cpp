@@ -2,8 +2,6 @@
 // https://www.youtube.com/watch?v=KkwX7FkLfug
 // 'tutorial' video used for code production
 
-#include "NeuralNet.h"
-
 #include <vector>
 #include <iostream>
 #include <cstdlib>
@@ -11,6 +9,9 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+
+#include "NeuralNet.h"
+#include "log.h"
 
 using namespace std;
 
@@ -180,7 +181,7 @@ Network::Network(const vector<unsigned> &Structure):
 		unsigned numOutputs = layerNum == Structure.size() - 1 ? 0 : Structure[layerNum + 1];
 		for (unsigned neuronNum = 0; neuronNum <= Structure[layerNum]; ++neuronNum) {
 			n_layers.back().push_back(A_Neuron(numOutputs, neuronNum));
-			cout << "Neuron created" << endl;
+			log::log << "Neuron created" << endl;
 		}
 		n_layers.back().back().setOutputVal(1.0);
 	}

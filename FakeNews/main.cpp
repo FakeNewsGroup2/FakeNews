@@ -45,7 +45,6 @@
 // 16609305 - Ashley Worth
 
 using std::cout;
-using std::cerr;
 using std::endl;
 using std::string;
 using std::vector;
@@ -104,7 +103,7 @@ int main(int argc, char* argv[])
 
     catch (const exc::exception& e)
     {
-        cerr << "Error: " << e.what() << endl;
+        log::error << e.what() << endl;
         return 1;
     }
 
@@ -141,58 +140,6 @@ void FakeNews::run(int argc, char* argv[])
 
     // TODO Create and use a load of `Estimator`s on all the URLs, weight their estimates and
     // produce an average confidence.
-
-    // Just manually create a test article for now.
-    article::Article test_article
-    (
-        "Breaking News: Group 2 Passes Assignment",
-        "Due to some absolutely gr8 teamwork, Group 2 have passed their assignment.",
-        net::Address("http://www.legit_site.com/articles/group2.html")
-    );
-
-    // Evaluate it using black/whitelists.
-    // We use a pointer because there is no default constructor and we want to wrap the creation in
-    // a try block.
-    estimator::BlackWhiteEstimator bwe(&test_article, "blacklist.txt", "whitelist.txt");
-    estimator::Estimate result = bwe.estimate();
-
-    cout << "For our test article, veracity is '" << result.veracity << ",' and confidence is '"
-        << result.confidence << ".'" << endl;
-
-    cout << "veracity:   0 = definitely fake, 1 = definitely true" << endl;
-    cout << "confidence: 0 = can't estimate,  1 = we are certain"  << endl;
-
-    if (!addresses.empty())
-    {
-        article::Article input_one
-        (
-            "PLACEHOLDER HEADLINE",
-            "PLACEHOLDER CONTENT",
-            addresses[0]
-        );
-
-        result = bwe.article(&input_one).estimate();
-
-        cout << "For input one, veracity is '" << result.veracity << ",' and confidence is '"
-            << result.confidence << ".'" << endl;
-    }
-
-    net::Address hl_article = net::Address("http://eelslap.com");
-
-    article::Article hit_list_test
-    (
-        "PLACEHOLDER HEADLINE",
-        net::get_file(hl_article.full()),
-        hl_article
-    );
-
-    estimator::HitListEstimator hle(&hit_list_test, "HitList.txt");
-    result = hle.estimate();
-
-    cout << "For the hitlist test (" << hl_article.full() << "), veracity is '" << result.veracity
-        << ",' and confidence is '" << result.confidence << ".'" << endl;
-	
-    pause();
 	
     // TODO Put this away somewhere.
 	neuralnet::Training trainData("training_data.txt");
@@ -216,7 +163,7 @@ void FakeNews::run(int argc, char* argv[])
 		cout << "Net recent average error: " << myNetwork.getRecentAverageError() << endl;
 	}
 
-	cout << "\nDone" << endl;
-
+    cout << '\n';
+	log::success << "Everything went well!" << endl;
     pause();
 }

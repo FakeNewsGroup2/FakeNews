@@ -7,11 +7,10 @@
 
 #include "HitListEstimator.h"
 
+#include "log.h"
 #include "fs.h"
 #include "exc.h"
 
-using std::cout;
-using std::cerr;
 using std::endl;
 using std::string;
 using std::vector;
@@ -39,6 +38,7 @@ HitListEstimator::HitListEstimator(const article::Article* article, const string
 
     // Load each line into a vector, converting to upper case as we go.
     string line;
+    string allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ- "; // The characters allowed in hit list entries.
 
     for (decltype(_hitlist.size()) i = 1; std::getline(file, line); ++i)
     {
@@ -46,42 +46,28 @@ HitListEstimator::HitListEstimator(const article::Article* article, const string
         {
             line[j] = toupper(line[j]);
 
-            if (string("ABCDEFGHIJKLMNOPQRSTUVWXYZ").find(line[j]) == string::npos)
+            if (allowed.find(line[j]) == string::npos)
             {
-                // TODO Have a consistent way of doing this throughout the code.
-                // Prints error message with line and column like this:
-                // [L065, C005] in '/path/to/hitlist.txt': Invalid character '!' in hit list entry 
-                // 'word!'
+                // TODO Have `exc::format` optionally take a file, line and column in its
+                // constructor, give those to it here, and pass them to `log::error` wherever this
+                // exception is caught.
 
                 std::stringstream ss;
 
-                ss << "[L"
-                    << std::setfill('0') << std::setw(3) << i
-                    << ", C"
-                    << std::setfill('0') << std::setw(3) << j + 1
-                    << "] in '" << path << "': Invalid character '" << line[j]
-                    << "' in hit list entry '" << line << "'";
+                ss << "Invalid character '" << line[j] << "' in hit list entry '" << line
+                    << "', only '" << allowed << "' are allowed";
 
                 throw exc::format(ss.str());
             }
         }
 
         if (std::find(_hitlist.cbegin(), _hitlist.cend(), line) != _hitlist.cend())
-        {
-            std::stringstream ss;
-
-            ss << "[Warning]: [L"
-                << std::setfill('0') << std::setw(3) << i
-                << "] in '" << path << "': Duplicate entry '" << line << "' in hit list '" << path
-                << "'";
-
-            cerr << ss.str() << endl;
-        }
+            log::warning(path, i) << "Duplicate entry '" << line << "' in hit list";
 
         _hitlist.emplace_back(line);
     }
 
-    if (_hitlist.empty()) cerr << "[Warning]: Hit list '" << path << "' is empty" << endl;
+    if (_hitlist.empty()) log::warning(path) << "Hit list is empty";
 
     // Make the article copy upper case.
     for (char& c : _upper) c = toupper(c);
@@ -95,7 +81,7 @@ Estimate HitListEstimator::estimate()
 
     for (const string& s : _hitlist) { if (_upper.find(s) != string::npos) { ++hits; continue; } }
 
-    cout << "HitList word matches: " << hits << endl;
+    log::log << "Hit list word matches: " << hits << endl;
 
     // TODO The veracity estimate is ABSOLUTELY HORRIBLE, and should be replaced by something better
     // ASAP.

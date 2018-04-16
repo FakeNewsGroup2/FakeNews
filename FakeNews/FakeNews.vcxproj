@@ -155,7 +155,6 @@
     <Text Include="blacklist.txt">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </Text>
-    <Text Include="dictionary.txt" />
     <Text Include="hitlist.txt" />
     <Text Include="training_data.txt" />
     <Text Include="whitelist.txt">

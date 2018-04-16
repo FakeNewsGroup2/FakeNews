@@ -82,8 +82,5 @@
     <Text Include="training_data.txt">
       <Filter>Resource Files</Filter>
     </Text>
-    <Text Include="dictionary.txt">
-      <Filter>Resource Files</Filter>
-    </Text>
   </ItemGroup>
 </Project>
