@@ -109,7 +109,7 @@ void print_colour(const string& msg, ConsoleColour colour, int flags)
 {
     if (flags & STDERR)
     {
-        if (isatty(STDERR_FILENO)
+        if (isatty(STDERR_FILENO))
         {
             if (flags & BOLD) cerr << "\x1B[1m";
             cerr << UNIX_LOOKUP[colour == CCOL_N ? DEFAULT : colour] << msg << UNIX_LOOKUP[DEFAULT];
