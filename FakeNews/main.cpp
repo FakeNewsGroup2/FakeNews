@@ -138,6 +138,117 @@ void FakeNews::run(int argc, char* argv[])
         cout << endl;
     }
 
+
+
+	string s;
+	int NumberOfInputs = 0;
+
+	ifstream in;
+	in.open("BlackHitList.txt");
+
+	while (!in.eof()) {
+		getline(in, s);
+		NumberOfInputs++;
+	}
+
+		std::ifstream file("BlackHitList.txt");
+		std::string str;
+		vector<string> file_contents;
+		while (std::getline(file, str))
+		{
+			
+			file_contents.push_back(str);
+		}
+	
+
+		std::ifstream file2("Whitelist2.txt");
+		string trainingdata = "TrainingData2.txt";
+		std::string str2;
+		vector<string> sites;
+		while (std::getline(file2, str2))
+		{
+			sites.push_back(str2);
+		}
+
+		ofstream myfile;
+		myfile.open(trainingdata);
+		myfile << "topology: ";
+		myfile << NumberOfInputs;
+		myfile << " ";
+		myfile << (NumberOfInputs) * 2;
+		myfile << " ";
+		myfile << "1\nin: ";
+		
+		myfile.close();
+		int count = 0;
+		for (auto attack = sites.begin(); attack != sites.end(); ++attack)
+		{
+			
+			string http_content;
+			string line;
+			cout << "Stage 2 - Get HTML content and check for suspicious content" << endl;
+
+			
+			line = sites[count];
+			cout << line << endl;
+			http_content = net::get_file(line); 
+			//catch (const exc::exception& e) { die(e.what()); }
+
+			// (Make the page contents upper case, then make the search terms upper case, and bingo,
+			// case-insensitive search.)
+			for (char& c : http_content) c = toupper(c);
+
+			// Load the search terms from a file, one per line.
+			vector<string> hit_list;
+
+			string path = "BlackHitList.txt";
+			ifstream file(path);
+
+			// TODO Better error message.
+			//if (!file.good()) die(string("Could not open file '") + path + string("' for reading.'"));
+
+			// Load each search term, converting to upper case as we go.
+			for (string line; std::getline(file, line);)
+			{
+				for (char& c : line) c = toupper(c);
+				hit_list.emplace_back(line);
+			}
+
+			// For each word in `hit_list`, search for it, and count it once if any occurrences are found.
+			size_t hits = 0;
+			std::ofstream out;
+
+			out.open(trainingdata, std::ios_base::app);
+			out << "\nin: ";
+			for (const string& s : hit_list)
+			{
+				if (http_content.find(s) != string::npos)
+				{
+					++hits;
+					std::ofstream outfile;
+
+					outfile.open(trainingdata, std::ios_base::app);
+					outfile << "1.0 ";
+					continue;
+				}
+				else
+				{
+					std::ofstream outfile;
+
+					outfile.open(trainingdata, std::ios_base::app);
+					outfile << "0.0 ";
+				}
+			}
+			std::ofstream outfile2;
+
+			outfile2.open(trainingdata, std::ios_base::app);
+			outfile2 << "\nout: 1.0";
+
+			cout << "HitList word matches: " << hits;
+			count++;
+		}
+
+		
     // TODO Do stuff!
 
     // TODO Create and use a load of `Estimator`s on all the URLs, weight their estimates and
