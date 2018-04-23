@@ -89,12 +89,6 @@ int main(int argc, char* argv[])
     // Demonstrating the new loggers.
     // There is `log::log`, `log::error`, `log::warning` and `log::success`
 
-    // All the loggers can take 0-3 arguments: file path, line number, column number.
-    log::log << "Demonstrating logging! Works like cout." << endl;
-    log::error("file.txt", 12, 34) << "Error in a file, at line 12 and column 34." << endl;
-    log::warning("file.txt") << "Warning in a file." << endl;
-    log::success("file.txt", 4321) << "This line succeeded! (For some reason.)" << endl;
-
     try
     {
         FakeNews fn;
@@ -110,11 +104,19 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-
 void FakeNews::run(int argc, char* argv[])
 {
     // We don't bother catching any `exc::exception`s in this method. Let the caller handle them.
     vector<net::Address> addresses;
+
+    string path = "articles/test1.txt";
+    log::log(path) << "Loading article..." << endl;
+    article::Article article(path);
+    log::success(path) << "Loaded OK." << endl;
+
+    cout << "Address: " << article.address().full() << endl;
+    cout << "Headline: " << article.headline() << endl;
+    cout << "Contents:\n" << article.contents() << endl;
 
     for (int i = 1; i < argc; ++i)
         addresses.emplace_back(argv[i]);

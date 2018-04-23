@@ -15,13 +15,12 @@ namespace fs
 // Behaves like GNU strerror_r.
 char* error(char* buf, size_t len);
 
-// Loads a file, line by line.
+// Loads a file, line by line. Because this calls `std::getline()`, it depends on the platform which
+// line endings it expects.
 // path: The path to a text file to load.
-// UNIX: Whether to expect UNIX ('\n') line endings. Otherwise expects DOS ('\r\n'). Defaults to
-//       `false`.
 // Returns a `vector<string>`, where each element is a line in the file.
 // Throws `exc::file` if the file at `path` could not be opened for reading.
-std::vector<std::string> load_lines(const std::string& path, bool UNIX = false);
+std::vector<std::string> load_lines(const std::string& path);
 
 }
 

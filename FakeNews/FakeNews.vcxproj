@@ -131,6 +131,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Article.cpp" />
     <ClCompile Include="fs.cpp" />
     <ClCompile Include="HitListEstimator.cpp" />
     <ClCompile Include="log.cpp" />

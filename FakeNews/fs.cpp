@@ -30,7 +30,7 @@ char* error(char* buf, size_t len)
 }
 #endif
 
-vector<string> load_lines(const string& path, bool UNIX)
+vector<string> load_lines(const string& path)
 {
     vector<string> lines;
     std::ifstream input(path);
@@ -45,7 +45,6 @@ vector<string> load_lines(const string& path, bool UNIX)
     }
 
     for (string line; getline(input, line, '\n'); lines.push_back(std::move(line)));
-    if (!UNIX) for (string& s : lines) s.pop_back(); // Remove the trailing '\r,' if needed.
     for (string& s : lines) s.shrink_to_fit();
     lines.shrink_to_fit();
     return lines;
