@@ -1,7 +1,4 @@
-
 70news.wordpress.com
-70news.wordpress.com
-ABCnews.com.co
 ABCnews.com.co
 action16News.com 
 action7Journal.com 
@@ -18,8 +15,6 @@ americaJobJournal.com
 americaJobsDaily.comn
 americaNewsDaily.com 
 americannews.com
-americannews.com
-americanpatriotdaily.com
 americanpatriotdaily.com
 atlanta-Gazette.com 
 atlanta-Tribune.com
@@ -28,7 +23,6 @@ aucklandConsumer.com
 b12-Media.com 
 bargainBoomer.com 
 beforeitsnews.com
-beforeitsnews.com
 best10WorkAtHomeJobs.org 
 bestGoogleProfits.info 
 bestGoogleRevenue.info 
@@ -36,8 +30,6 @@ best-Job-In.com
 birmingHamTribune.co.uk 
 bizNews9.info
 Bizstandardnews.com
-Bizstandardnews.com
-Bloomerg.ma
 Bloomerg.ma
 bobbyMakesCash.com 
 boston-BusinessNews.com 
@@ -60,7 +52,6 @@ careerBash.com
 cashMine.net 
 cash-With-Google.info
 celebtricity.com
-celebtricity.com
 chan33News.net 
 chan8News.com  
 chicago-BusinessNews.com 
@@ -74,14 +65,10 @@ city-Chronicle.com
 cityChronicle.com  
 cleveland-Tribune.com 
 cnn-trending.com
-cnn-trending.com
 columbusHeraldTribune.com  
 columbusTribuneNews.com  
 conservative101.com
-conservative101.com
 conservativefiringline.com
-conservativefiringline.com
-conservativefrontline.com
 conservativefrontline.com
 consumer-Monthly.com 
 consumerReportNow.com 
@@ -89,9 +76,7 @@ consumerReviewWeekly.com
 consumer-Weekly.com
 consumer-Weekly.net  
 Countynewsroom.info
-Countynewsroom.info
 daily-Breaking-News.com 
-dailybuzzlive.com
 dailybuzzlive.com
 daily-eNews.com  
 dailyJobGazette.com 
@@ -112,22 +97,18 @@ dailyTVNews7.com
 dallasDispatchDaily.com  
 dallasDispatchNews.com  
 dcgazette.com
-dcgazette.com
 dearbornDailyNews.com 
 dearbornNewsDaily.com  
 denverGlobeNews.com 
-denverguardian.com
 denverguardian.com
 denverInquirer.com 
 detroitJournal.com
 detroit-Tribune.com  
 detroit-Tribune-News.com 
 disclose.tv
-disclose.tv
 ditopedia.com 
 dollarHog.com
 downtownHerald.com 
-Drudgereport.com.co
 Drudgereport.com.co
 earn100USPerDay.com  
 earnExtraIncomeEasy.com  
@@ -139,12 +120,8 @@ e-FinancialTimes.com
 eFinancialTimes.com  
 e-FusjonEnergy.com 
 empireherald.com
-empireherald.com
-empirenews.net
 empirenews.net
 empiresportsworld.com
-empiresportsworld.com
-endoftheamericandream.com
 endoftheamericandream.com
 entrepreneurGazette.com  
 ericsCashBlog.com
@@ -156,7 +133,6 @@ finance-News.com-Review4u.com
 financialMoneyNews.com 
 financialNewsNY.com 
 findYourMissingMoney.com 
-firebrandleft.com
 firebrandleft.com
 flipAGrant.com 
 floridaJobHerald.com  
@@ -173,7 +149,6 @@ gazetteDailyNews.com
 gazetteNews.net  
 getYourFreedomBack.info 
 globalresearch.ca
-globalresearch.ca
 globeNewsDaily.com
 googleCashProfit.info  
 googleCashWorks.com  
@@ -184,10 +159,8 @@ googleProfitNow.info
 googleProfitsNew.info  
 googleWallets.com 
 gossipmillsa.com
-gossipmillsa.com
 greatWorkAtHomeJob.com  
 guardianOnline.us
-gummypost.com
 gummypost.com
 help4WeightLoss.com  
 heraldOnlineNews.com
@@ -197,10 +170,8 @@ homeWinning.com
 hottiesBuzz.com 
 houstonGazetteNews.com 
 huzlers.com
-huzlers.com
 immigrantsFinancialTimes.com 
 inertiaInMotion.com 
-infowars.com
 infowars.com
 internetJobNews.com 
 internetJobNews.com
@@ -223,7 +194,6 @@ justinsGoogleBlog.com
 kit-Digital.com 
 kLMT3.com 
 kmt11.com
-kmt11.com
 laBusinessNews.org 
 laCityOnlineGazetteNews.com
 laFinanceNews.com 
@@ -232,9 +202,7 @@ lANews9.com
 lATribuneNews.com 
 la-Tribune-Online.com 
 liberalsociety.com
-liberalsociety.com
 liveOn7.com 
-llod.us
 llod.us
 localGazetteNews.com 
 localHearld.com 
@@ -268,7 +236,6 @@ marisMoneyBlog.com
 marks-Blog.com  
 marylandFinanceNews.com 
 maryMakesTheNews.com 
-mediafetcher.com
 mediafetcher.com
 memphisGazetteNews.com
 miami5News.com 
@@ -305,12 +272,8 @@ nationalJobDigest.com
 nationalJobDigest.info 
 national-News-Gazette.com
 Nationalreport.net
-Nationalreport.net
-NationalReport.net
 nation-Wide-Jobs.com
 NBCnews.com.co
-NBCnews.com.co
-Neonnettle.com
 Neonnettle.com
 netCashDaily.net 
 netCityReviews.com
@@ -342,7 +305,6 @@ news9Sentinel.com
 news9Tonight.com 
 newsAtChannel9.info 
 newsChannelOnline.net
-newsexaminer.com
 newsJournal18.com 
 newsLine11.com  
 newsLine17.com  
@@ -375,8 +337,6 @@ northMiamiGazette.com
 northStarTribune.com 
 northWest-News.com 
 Now8news.com
-Now8news.com
-Now8News.com
 nu-New.com
 nYC-Tribune.com
 nYFinanceNews.com 
@@ -431,10 +391,8 @@ PrimeNews9.com
 ProAuctionUpdate.com
 ProfitsBiz.info 
 projectveritas.com
-projectveritas.com
 PubPaper.com  
 Quality-Forever-Marketing.com  
-react365.com
 ReadSomeNews.com 
 Real-Success-Stories.com 
 RecessionMoneySystem.com 
@@ -466,7 +424,6 @@ StephenHerald.com
 StLouisGazetteNews.com
 StStephenTimes.com 
 stuppid.com
-stuppid.com
 SunChronicleTimes.com
 SunCountyTimes.com  
 SunshineTribune.com   
@@ -476,7 +433,6 @@ TechWrap.org
 TexanTribune.com  
 TheBostonChronicle.com 
 TheBostonChronicles.com 
-thebostontribune.com
 thebostontribune.com
 TheBostonTribuneToday.com
 TheBostonWeekly.com 
@@ -516,7 +472,6 @@ TheMiamiGazetteNews.com
 The-Miami-Herald.com 
 TheMondayNews.org 
 TheNewYorkChronicle.com
-TheNewYorkEvening.com
 TheNewYorkGazetteNews.com 
 TheNewYorkGazettes.com 
 TheNewYorkTimesOnline.net 
@@ -524,7 +479,6 @@ The-NewYork-Tribune.com
 TheNYChronicle.com
 TheNYHerald.com 
 TheNYTimesOnline.com 
-Theonion.com
 Theonion.com
 TheOnlineWeeklyTimes.com 
 TheOrlandoTimes.com 
@@ -581,7 +535,6 @@ TribuneNetwork.com
 Tribune-News.fr 
 Tribune-Weekly.com 
 Truetrumpers.com
-Truetrumpers.com
 TrustedBusinessTimes.com 
 Trusted-News.com 
 TucsonGazetteNews.com 
@@ -609,7 +562,6 @@ USA-Money-Earners.com
 USAReportsToday.com 
 USATimesOnline.com 
 USATimesToday.com 
-usatoday.com.
 USDailyEagle.com 
 USDailyJobNews.com 
 US-Daily-Jobs-Report.com 
@@ -657,7 +609,6 @@ YourJobNews.com
 YourJobPortal.com
 YourLocal.org
 YourLocalWeekly.com
-YourNewsWire.com
 YourNewsWire.com
 Your-Weekly-Gazette.com 
 YouTubeRich.com
