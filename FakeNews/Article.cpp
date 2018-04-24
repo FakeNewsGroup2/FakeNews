@@ -16,7 +16,7 @@ namespace article
 
 {
 
-Article::Article(const string& path)
+Article::Article(const string& path): _address(nullptr)
 {
     vector<string> lines = fs::load_lines(path);
     

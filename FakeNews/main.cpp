@@ -21,6 +21,7 @@
 #include "NeuralNet.h"
 #include "HitListEstimator.h"
 
+#include <map>
 #include <vector>
 #include <iostream>
 #include <cstdlib>
@@ -86,9 +87,6 @@ class FakeNews
 
 int main(int argc, char* argv[])
 {
-    // Demonstrating the new loggers.
-    // There is `log::log`, `log::error`, `log::warning` and `log::success`
-
     try
     {
         FakeNews fn;
@@ -106,39 +104,38 @@ int main(int argc, char* argv[])
 
 void FakeNews::run(int argc, char* argv[])
 {
+    // TODO Have extra info in the exceptions and let this be printed in the error messages, the
+    // current system SUCKS.
+
     // We don't bother catching any `exc::exception`s in this method. Let the caller handle them.
-    vector<net::Address> addresses;
 
-    string path = "articles/test1.txt";
-    log::log(path) << "Loading article..." << endl;
-    article::Article article(path);
-    log::success(path) << "Loaded OK." << endl;
+    string article_dir;
 
-    cout << "Address: " << article.address().full() << endl;
-    cout << "Headline: " << article.headline() << endl;
-    cout << "Contents:\n" << article.contents() << endl;
-
-    for (int i = 1; i < argc; ++i)
-        addresses.emplace_back(argv[i]);
-
-    // If there were no arguments given, prompt the user for URLs.
+    // If there were no arguments given, prompt the user for a path.
     if (argc == 1)
     {
-        cout << "Please enter URLs, one per line. (Leave blank and press Enter when done.)" << endl;
-        
-        for (int i = 1; ; ++i)
-        {
-            string line;
-            cout << "(URL " << i << ") > " << std::flush;
-            getline(std::cin, line);
-            if (line.empty()) break;
-            addresses.emplace_back(line);
-        }
+        cout << "Please enter path to a directory of articles. (Leave blank to cancel.)" << endl;
+        cout << "> " << std::flush;
+        getline(std::cin, article_dir);
+        if (article_dir.empty()) return;
+    }
+   
+    // Otherwise the first argument is the path.
+    else article_dir = argv[1];
 
-        cout << endl;
+    std::map<string, article::Article> articles;
+    
+    for (const string& path : fs::get_files(article_dir))
+        articles.emplace(path, std::move(article::Article(path)));
+
+    for (const auto& v : articles)
+    {
+        cout << v.first << endl;
+        cout << v.second.address().full() << endl;
+        cout << v.second.headline() << endl;
     }
 
-
+    return;
 
 	string s;
 	int NumberOfInputs = 0;
@@ -181,7 +178,7 @@ void FakeNews::run(int argc, char* argv[])
 		
 		myfile.close();
 		int count = 0;
-		for (auto attack = sites.begin(); attack != sites.end(); ++attack)
+        for (auto attack : sites)
 		{
 			
 			string http_content;
@@ -191,8 +188,7 @@ void FakeNews::run(int argc, char* argv[])
 			
 			line = sites[count];
 			cout << line << endl;
-			http_content = net::get_file(line); 
-			//catch (const exc::exception& e) { die(e.what()); }
+			http_content = net::get_file(line);
 
 			// (Make the page contents upper case, then make the search terms upper case, and bingo,
 			// case-insensitive search.)
@@ -205,7 +201,8 @@ void FakeNews::run(int argc, char* argv[])
 			ifstream file(path);
 
 			// TODO Better error message.
-			//if (!file.good()) die(string("Could not open file '") + path + string("' for reading.'"));
+			if (!file.good())
+                throw exc::file(string("Could not open file '") + path + string("' for reading.'"));
 
 			// Load each search term, converting to upper case as we go.
 			for (string line; std::getline(file, line);)

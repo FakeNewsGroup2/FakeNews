@@ -22,6 +22,12 @@ char* error(char* buf, size_t len);
 // Throws `exc::file` if the file at `path` could not be opened for reading.
 std::vector<std::string> load_lines(const std::string& path);
 
+// Gets a list of every file in a directory. 'File' only means regular files. Not recursive.
+// path: The path to the directory to list.
+// Returns a `vector<string>`, where each element is a full, absolute path to a file.
+// Throws `exc::file` if the directory at `path` could not be read.
+std::vector<std::string> get_files(const std::string& path);
+
 }
 
 }
