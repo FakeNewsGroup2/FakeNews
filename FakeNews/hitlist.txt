@@ -57,7 +57,6 @@ moderate
 aid
 alive
 alcohol
-alive
 all
 time
 person
@@ -67,7 +66,6 @@ day
 great
 little
 own
-to
 of
 woman
 child
@@ -80,7 +78,6 @@ fact
 their
 there
 would
-all
 one
 my
 try

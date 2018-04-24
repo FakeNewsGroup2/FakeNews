@@ -32,15 +32,18 @@ HitListEstimator::HitListEstimator(const article::Article* article, const string
 
     // Load each line into a vector, converting to upper case as we go.
     string line;
+    string line_upper = ""; // Store the upper case version in a copy so error messages contain the
+                            // original
     string allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ- "; // The characters allowed in hit list entries.
 
     for (decltype(_hitlist.size()) i = 1; std::getline(file, line); ++i)
     {
         for (string::size_type j = 0; j < line.size(); ++j)
         {
-            line[j] = toupper(line[j]);
+            char upper = toupper(line[j]);
+            line_upper.push_back(upper);
 
-            if (allowed.find(line[j]) == string::npos)
+            if (allowed.find(upper) == string::npos)
             {
                 std::stringstream ss;
 
@@ -52,12 +55,13 @@ HitListEstimator::HitListEstimator(const article::Article* article, const string
         }
 
         if (std::find(_hitlist.cbegin(), _hitlist.cend(), line) != _hitlist.cend())
-            log::warning(path, i) << "Duplicate entry '" << line << "' in hit list";
+            log::warning(path, i) << "Duplicate entry '" << line
+            << "' in hit list (case-insensitive)" << endl;
 
         _hitlist.emplace_back(line);
     }
 
-    if (_hitlist.empty()) log::warning(path) << "Hit list is empty";
+    if (_hitlist.empty()) log::warning(path) << "Hit list is empty" << endl;
 
     // Make the article copy upper case.
     for (char& c : _upper) c = toupper(c);

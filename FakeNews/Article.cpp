@@ -20,9 +20,12 @@ Article::Article(const string& path): _address(nullptr)
 {
     vector<string> lines = fs::load_lines(path);
     
-    if (lines.size() < 3) throw exc::format("Not enough lines");
+    if (lines.size() < 3) throw exc::format("Not enough lines", path);
     
-    _address = new net::Address(lines[0]);
+    // If the URL was the wrong format, rethrow the exception with some extra info.
+    try                          { _address = new net::Address(lines[0]); }
+    catch (const exc::format& e) { throw exc::format(e.what(), path, 1);  }
+
     _headline = lines[1];
     
     for (decltype(lines)::size_type i = 2; i < lines.size(); ++i)
