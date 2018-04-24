@@ -93,6 +93,18 @@ int main(int argc, char* argv[])
         fn.run(argc, argv);
     }
 
+    catch (const exc::format& e)
+    {
+        log::error(e.path(), e.line(), e.column()) << e.what() << endl;
+        return 1;
+    }
+
+    catch (const exc::file& e)
+    {
+        log::error(e.path()) << e.what() << endl;
+        return 1;
+    }
+
     catch (const exc::exception& e)
     {
         log::error << e.what() << endl;
@@ -104,9 +116,6 @@ int main(int argc, char* argv[])
 
 void FakeNews::run(int argc, char* argv[])
 {
-    // TODO Have extra info in the exceptions and let this be printed in the error messages, the
-    // current system SUCKS.
-
     // We don't bother catching any `exc::exception`s in this method. Let the caller handle them.
 
     string article_dir;
@@ -135,6 +144,19 @@ void FakeNews::run(int argc, char* argv[])
         cout << v.second.headline() << endl;
     }
 
+    // Test article is just the first article we loaded, whatever that was.
+    // (Actually it's a `std::pair<string, Article>` where the `string` is the file path.)
+    if (articles.empty()) return; // This is just to stop it crashing if we haven't loaded any.
+    const auto& test_article = *articles.begin();
+
+    // Make a `HitListEstimator` just to test the error messages when it's the wrong format.
+    log::log(test_article.first) << "Testing article..." << endl;
+    estimator::HitListEstimator hle(&test_article.second, "hitlist.txt");
+    estimator::Estimate estimate = hle.estimate();
+    cout << "Veracity:   " << estimate.veracity << endl;
+    cout << "Confidence: " << estimate.confidence << endl;
+    
+    log::success << "Everything went well!" << endl;
     return;
 
 	string s;
@@ -197,12 +219,10 @@ void FakeNews::run(int argc, char* argv[])
 			// Load the search terms from a file, one per line.
 			vector<string> hit_list;
 
-			string path = "BlackHitList.txt";
+			string path = "hitlist.txt";
 			ifstream file(path);
 
-			// TODO Better error message.
-			if (!file.good())
-                throw exc::file(string("Could not open file '") + path + string("' for reading.'"));
+			if (!file.good()) throw exc::file(fs::error(), path);
 
 			// Load each search term, converting to upper case as we go.
 			for (string line; std::getline(file, line);)

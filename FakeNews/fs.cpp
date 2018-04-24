@@ -19,10 +19,11 @@ namespace fs
 
 #if defined _MSC_VER || defined __MINGW32__
 #include <Windows.h>
-char* error(char* buf, size_t len)
+string error()
 {
-    strerror_s(buf, len, errno);
-    return buf;
+    char buf[256];
+    strerror_s(buf, sizeof(buf), errno);
+    return string(buf);
 }
 
 vector<string> get_files(const string& path)
@@ -42,11 +43,11 @@ vector<string> get_files(const string& path)
     WIN32_FIND_DATAA data;
     HANDLE find = FindFirstFileA(glob_path.c_str(), &data);
     
-    if (find == INVALID_HANDLE_VALUE) throw exc::file("Could not read directory");
+    if (find == INVALID_HANDLE_VALUE) throw exc::file("Could not read directory", path);
     if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
     {
         FindClose(find);
-        throw exc::file("Not a directory");
+        throw exc::file("Not a directory", path);
     }
 
     glob_path += "\\*";
@@ -58,7 +59,7 @@ vector<string> get_files(const string& path)
 
     for (find = FindFirstFileA(glob_path.c_str(), &data); FindNextFileA(find, &data);)
     {
-        if (find == INVALID_HANDLE_VALUE) throw exc::file("Could not read directory");
+        if (find == INVALID_HANDLE_VALUE) throw exc::file("Could not read directory", path);
         
         if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
             result.emplace_back(trail_path + data.cFileName);
@@ -73,6 +74,12 @@ char* error(char* buf, size_t len)
     return strerror_r(errno, buf, len);
 }
 
+string error()
+{
+    char buf[256];
+    return string(strerror_r(errno, buf, sizeof(buf)));
+}
+
 // TODO implement `get_files()` for Linux
 #endif
 
@@ -81,14 +88,7 @@ vector<string> load_lines(const string& path)
     vector<string> lines;
     std::ifstream input(path);
 
-    if (!input)
-    {
-        std::stringstream ss;
-        char err[256];
-        ss << "File at '" << path << "' could not be opened for reading: "
-            << error(err, sizeof(err));
-        throw exc::file(ss.str());
-    }
+    if (!input) throw exc::file(error(), path);
 
     for (string line; getline(input, line, '\n'); lines.push_back(std::move(line)));
     for (string& s : lines) s.shrink_to_fit();

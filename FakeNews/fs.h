@@ -11,9 +11,10 @@ namespace fakenews
 namespace fs
 {
 
-// All this does is wraps strerror, so that it compiles with both MSVC, GCC, and MinGW.
-// Behaves like GNU strerror_r.
-char* error(char* buf, size_t len);
+// All this does is wraps strerror, so that it compiles with MSVC, GCC, and MinGW.
+// Gets a string describing the last file system error. Uses strerror_s (or GNU strerror_r,
+// depending) underneath.
+std::string error();
 
 // Loads a file, line by line. Because this calls `std::getline()`, it depends on the platform which
 // line endings it expects.

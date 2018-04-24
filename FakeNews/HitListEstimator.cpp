@@ -28,13 +28,7 @@ HitListEstimator::HitListEstimator(const article::Article* article, const string
 {
     std::ifstream file(path);
 
-    if (!file)
-    {
-        char err[256];
-        std::stringstream ss;
-        ss << "Could not open file '" << path << "' for reading: " << fs::error(err, sizeof(err));
-        throw exc::file(ss.str());
-    }
+    if (!file) throw exc::file(fs::error(), path);
 
     // Load each line into a vector, converting to upper case as we go.
     string line;
@@ -48,16 +42,12 @@ HitListEstimator::HitListEstimator(const article::Article* article, const string
 
             if (allowed.find(line[j]) == string::npos)
             {
-                // TODO Have `exc::format` optionally take a file, line and column in its
-                // constructor, give those to it here, and pass them to `log::error` wherever this
-                // exception is caught.
-
                 std::stringstream ss;
 
                 ss << "Invalid character '" << line[j] << "' in hit list entry '" << line
                     << "', only '" << allowed << "' are allowed";
 
-                throw exc::format(ss.str());
+                throw exc::format(ss.str(), path, i, j + 1);
             }
         }
 

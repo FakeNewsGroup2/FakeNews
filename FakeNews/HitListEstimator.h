@@ -17,6 +17,10 @@ namespace estimator
 class HitListEstimator : public Estimator
 {
     public:
+    // Estimates based on the presence of words from a 'hit list,' which is a file where each line
+    // contains a 'bad' word to look for.
+    // article: The article to estimate.
+    // path:    The path to the hit list.
     // Throws `exc::file` if the file at `path` couldn't be opened for reading.
     HitListEstimator(const article::Article* article, const std::string& path);
     Estimate estimate();
