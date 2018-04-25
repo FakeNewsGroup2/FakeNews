@@ -35,7 +35,7 @@ class Estimator
         return *this;
     }
 
-    // You're meant to override these.
+    // You're meant to override this.
     virtual Estimate estimate() { return Estimate { 0.0, 0.0 }; }
 
     protected:

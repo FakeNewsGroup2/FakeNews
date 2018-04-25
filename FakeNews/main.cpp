@@ -160,9 +160,6 @@ void FakeNews::run(int argc, char* argv[])
     
     for (const string& path : fs::get_files(article_dir))
         articles.emplace(path, std::move(article::Article(path)));
-
-    // struct Estimator2 { Estimator estimator; float desired_weight; string name; }
-    // Estimate evaluate(const article::Article& article, const vector<std::tuple<Estimator*, string, float>>& estimators);
     
     log::success << "Everything went well!" << endl;
     return;
@@ -309,7 +306,7 @@ std::map<string, std::pair<estimator::Estimate, float>>
         FakeNews::estimate(const article::Article& article,
         const std::map<string, std::pair<estimator::Estimator*, float>>& estimators)
 {
-    // TODO Calculate the weights, you dickhead.
+    // TODO Actually calculate the weights, you dickhead.
     std::map<string, std::pair<estimator::Estimate, float>> result;
 
     for (const auto& name_estim : estimators)
