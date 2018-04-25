@@ -70,6 +70,28 @@ class FakeNews
     void run(int argc, char* argv[]);
 
     private:
+    // Now this is a function signaure! Evaluates an article using all the estimators you give it.
+    // article:    The article to estimate.
+    // estimators: A `map` of `pair`s. The keys are the human-readable display names of the
+    //             estimators, and the values go <estimator, desired weight>.
+    // Returns a map, where the keys are the display names you passed into `estimators`, and the
+    // values are a pair which goes <resulting estimate, weight>. The 'weight' is the real weight
+    // that got calculated, not the desired weight (see below), so they all add up to 1.
+    // Throws anything that the `estimate()` method on any of your estimators might throw.
+
+    // 'Desired weight'
+    // This should be a number between 0 and 1, indicating how much weight you want it to have.
+    // (Numbers below 0 are interpreted as 0, and above 1 are interpreted as 1.) These are only
+    // important relative to each other; if they all have the same 'desired weight' they all have
+    // the same weight in the output. The 'desired weight' is used to calculate the actual weights
+    // in the output. The point is to save you from having to mess around making sure all the
+    // weights add up to 1. Just give it an indicator between 0 and 1, and it will scale the actual
+    // weights for you, depending on the number of `Estimator`s, to make them all add up to 1.
+
+    std::map<string, std::pair<estimator::Estimate, float>>
+        estimate(const article::Article& article,
+        const std::map<string, std::pair<estimator::Estimator*, float>>& estimators);
+
     template<typename T> void display_vector(const string& label, const vector<T>& vec)
     {
         cout << label;
@@ -126,35 +148,21 @@ void FakeNews::run(int argc, char* argv[])
         cout << "Please enter path to a directory of articles. (Leave blank to cancel.)" << endl;
         cout << "> " << std::flush;
         getline(std::cin, article_dir);
+        std::cin.clear();
         if (article_dir.empty()) return;
     }
    
     // Otherwise the first argument is the path.
     else article_dir = argv[1];
 
+    // <full path to article, article>
     std::map<string, article::Article> articles;
     
     for (const string& path : fs::get_files(article_dir))
         articles.emplace(path, std::move(article::Article(path)));
 
-    for (const auto& v : articles)
-    {
-        cout << v.first << endl;
-        cout << v.second.address().full() << endl;
-        cout << v.second.headline() << endl;
-    }
-
-    // Test article is just the first article we loaded, whatever that was.
-    // (Actually it's a `std::pair<string, Article>` where the `string` is the file path.)
-    if (articles.empty()) return; // This is just to stop it crashing if we haven't loaded any.
-    const auto& test_article = *articles.begin();
-
-    // Make a `HitListEstimator` just to test the error messages when it's the wrong format.
-    log::log(test_article.first) << "Testing article..." << endl;
-    estimator::HitListEstimator hle(&test_article.second, "hitlist.txt");
-    estimator::Estimate estimate = hle.estimate();
-    cout << "Veracity:   " << estimate.veracity << endl;
-    cout << "Confidence: " << estimate.confidence << endl;
+    // struct Estimator2 { Estimator estimator; float desired_weight; string name; }
+    // Estimate evaluate(const article::Article& article, const vector<std::tuple<Estimator*, string, float>>& estimators);
     
     log::success << "Everything went well!" << endl;
     return;
@@ -174,8 +182,7 @@ void FakeNews::run(int argc, char* argv[])
 		std::string str;
 		vector<string> file_contents;
 		while (std::getline(file, str))
-		{
-			
+        {
 			file_contents.push_back(str);
 		}
 	
@@ -296,4 +303,23 @@ void FakeNews::run(int argc, char* argv[])
     cout << '\n';
 	log::success << "Everything went well!" << endl;
     pause();
+}
+
+std::map<string, std::pair<estimator::Estimate, float>>
+        FakeNews::estimate(const article::Article& article,
+        const std::map<string, std::pair<estimator::Estimator*, float>>& estimators)
+{
+    // TODO Calculate the weights, you dickhead.
+    std::map<string, std::pair<estimator::Estimate, float>> result;
+
+    for (const auto& name_estim : estimators)
+    {
+        float weight = name_estim.second.second;
+        if      (weight < 0) weight = 0;
+        else if (weight > 1) weight = 1;
+
+        result.emplace(name_estim.first, std::make_pair(name_estim.second.first->article(&article).estimate(), weight));
+    }
+
+    return result;
 }
