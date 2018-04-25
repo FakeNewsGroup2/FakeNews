@@ -162,7 +162,8 @@ void FakeNews::run(int argc, char* argv[])
         articles.emplace(path, std::move(article::Article(path)));
     
     log::success << "Everything went well!" << endl;
-    return;
+
+	 //return was here
 
 	string s;
 	int NumberOfInputs = 0;
@@ -179,20 +180,29 @@ void FakeNews::run(int argc, char* argv[])
 		std::string str;
 		vector<string> file_contents;
 		while (std::getline(file, str))
-        {
+		{
+			
 			file_contents.push_back(str);
 		}
 	
 
 		std::ifstream file2("Whitelist2.txt");
-		string trainingdata = "TrainingData2.txt";
+		
 		std::string str2;
 		vector<string> sites;
 		while (std::getline(file2, str2))
 		{
 			sites.push_back(str2);
 		}
+		std::ifstream file3("blacklist.txt");
+		std::string str3;
+		vector<string> sites2;
+		while (std::getline(file3, str3))
+		{
 
+			sites2.push_back(str3);
+		}
+		string trainingdata = "TrainingData2.txt";
 		ofstream myfile;
 		myfile.open(trainingdata);
 		myfile << "topology: ";
@@ -204,17 +214,19 @@ void FakeNews::run(int argc, char* argv[])
 		
 		myfile.close();
 		int count = 0;
+
         for (auto attack : sites)
 		{
 			
 			string http_content;
 			string line;
-			cout << "Stage 2 - Get HTML content and check for suspicious content" << endl;
+			cout << "Stage 3 - Get HTML content and check for trusted content" << endl;
 
 			
 			line = sites[count];
 			cout << line << endl;
-			http_content = net::get_file(line);
+			try { http_content = net::get_file(line); }
+			catch (const exc::net& e) { log::error(line) << e.what() << endl; }
 
 			// (Make the page contents upper case, then make the search terms upper case, and bingo,
 			// case-insensitive search.)
@@ -223,10 +235,12 @@ void FakeNews::run(int argc, char* argv[])
 			// Load the search terms from a file, one per line.
 			vector<string> hit_list;
 
-			string path = "hitlist.txt";
+			string path = "BlackHitList.txt";
 			ifstream file(path);
 
-			if (!file.good()) throw exc::file(fs::error(), path);
+			// TODO Better error message.
+			if (!file.good())
+                throw exc::file(string("Could not open file '") + path + string("' for reading.'"));
 
 			// Load each search term, converting to upper case as we go.
 			for (string line; std::getline(file, line);)
@@ -240,7 +254,68 @@ void FakeNews::run(int argc, char* argv[])
 			std::ofstream out;
 
 			out.open(trainingdata, std::ios_base::app);
-			out << "\nin: ";
+			if (!hit_list.empty()) out << "\nin: ";
+
+			for (const string& s : hit_list)
+			{
+				if (http_content.find(s) != string::npos)
+				{
+					++hits;
+					out << "1.0 ";
+				}
+
+				else
+				{
+					out << "0.0 ";
+				}
+			}
+
+			out << "\nout: 1.0";
+
+			cout << "HitList word matches: " << hits;
+			count++;
+		}
+		count = 0;
+		for (auto attack : sites2)
+		{
+
+			string http_content;
+			string line;
+			cout << "Stage 3 - Get HTML content and check for suspicious content" << endl;
+
+
+			line = sites2[count];
+			cout << line << endl;
+			try { http_content = net::get_file(line); }
+			catch (const exc::net& e) { log::error(line) << e.what() << endl; }
+
+			// (Make the page contents upper case, then make the search terms upper case, and bingo,
+			// case-insensitive search.)
+			for (char& c : http_content) c = toupper(c);
+
+			// Load the search terms from a file, one per line.
+			vector<string> hit_list;
+
+			string path = "BlackHitList.txt";
+			ifstream file(path);
+
+			// TODO Better error message.
+			if (!file.good())
+				throw exc::file(string("Could not open file '") + path + string("' for reading.'"));
+
+			// Load each search term, converting to upper case as we go.
+			for (string line; std::getline(file, line);)
+			{
+				for (char& c : line) c = toupper(c);
+				hit_list.emplace_back(line);
+			}
+
+			// For each word in `hit_list`, search for it, and count it once if any occurrences are found.
+			size_t hits = 0;
+			std::ofstream out;
+
+			out.open(trainingdata, std::ios_base::app);
+			if (!hit_list.empty()) out << "\nin: ";
 			for (const string& s : hit_list)
 			{
 				if (http_content.find(s) != string::npos)
@@ -263,12 +338,13 @@ void FakeNews::run(int argc, char* argv[])
 			std::ofstream outfile2;
 
 			outfile2.open(trainingdata, std::ios_base::app);
-			outfile2 << "\nout: 1.0";
+			outfile2 << "\nout: 0.0";
 
 			cout << "HitList word matches: " << hits;
 			count++;
 		}
 
+		return;
 		
     // TODO Do stuff!
 
