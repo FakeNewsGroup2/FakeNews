@@ -21,6 +21,7 @@ std::string error();
 // path: The path to a text file to load.
 // Returns a `vector<string>`, where each element is a line in the file.
 // Throws `exc::file` if the file at `path` could not be opened for reading.
+// Throws `exc::arg` if `path` is empty.
 std::vector<std::string> load_lines(const std::string& path);
 
 // Gets a list of every file in a directory. 'File' only means regular files. Not recursive.

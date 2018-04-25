@@ -134,11 +134,14 @@ void print_colour(const string& msg, ConsoleColour colour, int flags)
 #endif
 
 // Makes the '(L123, C321) in 'file.txt':' part of the message.
-string info(const string& file, size_t line, size_t column)
+string info(const string& which, size_t line, size_t column)
 {
-    // `line` and `column` can be 0 for N/A, and `file` can be empty
-    // Really you should give a file if you give a line and column, but it won't try to stop you
-    // In its own function since it's repeated loads.
+    // TODO If `which` is the only one given, don't surround it with commas.
+
+    // `line` and `column` can be 0 for N/A, and `which` can be empty
+    // Really you should give a `which` if you give a line and column, but it won't try to stop you.
+    // `line` and `column` also only make logical sense if `which` is a file.
+    // (This is its own function because it's repeated loads.)
     
     std::stringstream ss;
 
@@ -149,18 +152,18 @@ string info(const string& file, size_t line, size_t column)
         ss << ')';
     }
 
-    if (!file.empty()) ss << ' ' << (line || column ? "in " : "") << "'" << file << '\'';
+    if (!which.empty()) ss << ' ' << (line || column ? "in " : "") << "'" << which << '\'';
 
     ss << ':';
     return ss.str();
 }
 
-std::ostream& msg(const string& text, ConsoleColour colour, const string& file, size_t line,
+std::ostream& msg(const string& text, ConsoleColour colour, const string& which, size_t line,
         size_t column, bool err)
 // Prints the start part of a message. (e.g. 'Error:')
 // text:   The prompt at the start. (So 'error' or 'log' or whatever.)
 // colour: The colour that `text` should be printed as.
-// file:   Passed to `info()`.
+// which:  Passed to `info()`.
 // line:   Passed to `info()`.
 // column: Passed to `info()`.
 // err:    If true, print to stderr with `cerr`. If false, print to stdout with `cout`.
@@ -173,7 +176,7 @@ std::ostream& msg(const string& text, ConsoleColour colour, const string& file, 
         << setw(width / 2 + 1) << ']';
 
     print_colour(ss.str(), colour, err | BOLD);
-    print_colour(info(file, line, column), WHITE, err | BOLD);
+    print_colour(info(which, line, column), WHITE, err | BOLD);
     
     std::ostream& output = err ? cerr : cout;
     output << ' ' << flush;
@@ -182,8 +185,8 @@ std::ostream& msg(const string& text, ConsoleColour colour, const string& file, 
 
 // Now the implementations of `Logger`.
 
-ostream& Logger::operator()(const string& file, size_t line, size_t column)
-{ return msg(_text, _colour, file, line, column, _err); }
+ostream& Logger::operator()(const string& which, size_t line, size_t column)
+{ return msg(_text, _colour, which, line, column, _err); }
 
 ostream& Logger::operator<<(const string& value)
 { return msg(_text, _colour, "", 0, 0, _err) << value; }

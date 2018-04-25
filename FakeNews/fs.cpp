@@ -37,7 +37,7 @@ vector<string> get_files(const string& path)
     // Now make sure it exists, and is a directory.
     // Add '\*'.
     
-    if (glob_path.empty()) throw exc::file("Path is empty");
+    if (glob_path.empty()) throw exc::arg("Argument empty", "path");
     if (glob_path[glob_path.size() - 1] == '\\') glob_path.pop_back();
 
     WIN32_FIND_DATAA data;

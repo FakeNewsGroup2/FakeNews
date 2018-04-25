@@ -12,6 +12,7 @@
 #include "curl/easy.h"
 #include <cstdio>
 
+#include "util.h"
 #include "log.h"
 #include "fs.h"
 #include "exc.h"
@@ -60,7 +61,10 @@ class FakeNews
 {
     public:
     FakeNews()
-    { if (curl_global_init(CURL_GLOBAL_DEFAULT)) throw exc::init("Could not initialise libcurl"); }
+    {
+        if (curl_global_init(CURL_GLOBAL_DEFAULT))
+            throw exc::init("Initialisation failed", "libcurl");
+    }
 
     ~FakeNews()
     { curl_global_cleanup(); }
@@ -117,19 +121,13 @@ int main(int argc, char* argv[])
 
     catch (const exc::format& e)
     {
-        log::error(e.path(), e.line(), e.column()) << e.what() << endl;
-        return 1;
-    }
-
-    catch (const exc::file& e)
-    {
-        log::error(e.path()) << e.what() << endl;
+        log::error(e.which(), e.line(), e.column()) << e.what() << endl;
         return 1;
     }
 
     catch (const exc::exception& e)
     {
-        log::error << e.what() << endl;
+        log::error(e.which()) << e.what() << endl;
         return 1;
     }
 
@@ -160,191 +158,62 @@ void FakeNews::run(int argc, char* argv[])
     
     for (const string& path : fs::get_files(article_dir))
         articles.emplace(path, std::move(article::Article(path)));
+
+    // TODO Have a whitelist/blacklist-loading function which has an error if it's not in the right
+    // format, removes blank entries, strips leading/trailing whitespace and warns about duplicates.
+    // Use it here. (Use something similar for hitlist too.)
+    vector<string> whitelist = fs::load_lines("whitelist.txt");
+    vector<string> blacklist = fs::load_lines("blacklist.txt");
+    vector<string> hitlist   = fs::load_lines("hitlist.txt");
     
+    // We build it up as a string, then write it all at the end in one go. This is so that, if
+    // something fails along the way, we don't overwrite the existing training data.
+    std::stringstream ss;
+    ss << "topology: " << hitlist.size() << ' ' << hitlist.size() * 2 << " 1";
+
+    // TODO Don't repeat this, make a function.
+    for (const string& site : whitelist)
+    {
+        string html;
+        
+        log::log(site) << "Getting page..." << endl;
+
+        try                       { html = util::upper(net::get_file(site));   }
+        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl; }
+        
+        ss << "\nin:";
+        
+        for (const string& word : hitlist)
+            ss << (html.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0");
+
+        ss << "\nout: 1.0";
+    }
+
+    for (const string& site : blacklist)
+    {
+        string html;
+
+        log::log(site) << "Getting page..." << endl;
+
+        try                       { html = util::upper(net::get_file(site));   }
+        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl; }
+
+        ss << "\nin:";
+
+        for (const string& word : hitlist)
+            ss << (html.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0");
+
+        ss << "\nout: 0.0";
+    }
+
+    // Now we actually bother with writing the output.
+    string training_path = "training_data.txt";
+    log::log(training_path) << "Writing training data..." << endl;
+    std::ofstream file(training_path);
+    if (!file.good()) throw exc::file(fs::error(), training_path);
+    file << ss.str() << endl;
     log::success << "Everything went well!" << endl;
-
-	 //return was here
-
-	string s;
-	int NumberOfInputs = 0;
-
-	ifstream in;
-	in.open("BlackHitList.txt");
-
-	while (!in.eof()) {
-		getline(in, s);
-		NumberOfInputs++;
-	}
-
-		std::ifstream file("BlackHitList.txt");
-		std::string str;
-		vector<string> file_contents;
-		while (std::getline(file, str))
-		{
-			
-			file_contents.push_back(str);
-		}
-	
-
-		std::ifstream file2("Whitelist2.txt");
-		
-		std::string str2;
-		vector<string> sites;
-		while (std::getline(file2, str2))
-		{
-			sites.push_back(str2);
-		}
-		std::ifstream file3("blacklist.txt");
-		std::string str3;
-		vector<string> sites2;
-		while (std::getline(file3, str3))
-		{
-
-			sites2.push_back(str3);
-		}
-		string trainingdata = "TrainingData2.txt";
-		ofstream myfile;
-		myfile.open(trainingdata);
-		myfile << "topology: ";
-		myfile << NumberOfInputs;
-		myfile << " ";
-		myfile << (NumberOfInputs) * 2;
-		myfile << " ";
-		myfile << "1\nin: ";
-		
-		myfile.close();
-		int count = 0;
-
-        for (auto attack : sites)
-		{
-			
-			string http_content;
-			string line;
-			cout << "Stage 3 - Get HTML content and check for trusted content" << endl;
-
-			
-			line = sites[count];
-			cout << line << endl;
-			try { http_content = net::get_file(line); }
-			catch (const exc::net& e) { log::error(line) << e.what() << endl; }
-
-			// (Make the page contents upper case, then make the search terms upper case, and bingo,
-			// case-insensitive search.)
-			for (char& c : http_content) c = toupper(c);
-
-			// Load the search terms from a file, one per line.
-			vector<string> hit_list;
-
-			string path = "BlackHitList.txt";
-			ifstream file(path);
-
-			// TODO Better error message.
-			if (!file.good())
-                throw exc::file(string("Could not open file '") + path + string("' for reading.'"));
-
-			// Load each search term, converting to upper case as we go.
-			for (string line; std::getline(file, line);)
-			{
-				for (char& c : line) c = toupper(c);
-				hit_list.emplace_back(line);
-			}
-
-			// For each word in `hit_list`, search for it, and count it once if any occurrences are found.
-			size_t hits = 0;
-			std::ofstream out;
-
-			out.open(trainingdata, std::ios_base::app);
-			if (!hit_list.empty()) out << "\nin: ";
-
-			for (const string& s : hit_list)
-			{
-				if (http_content.find(s) != string::npos)
-				{
-					++hits;
-					out << "1.0 ";
-				}
-
-				else
-				{
-					out << "0.0 ";
-				}
-			}
-
-			out << "\nout: 1.0";
-
-			cout << "HitList word matches: " << hits;
-			count++;
-		}
-		count = 0;
-		for (auto attack : sites2)
-		{
-
-			string http_content;
-			string line;
-			cout << "Stage 3 - Get HTML content and check for suspicious content" << endl;
-
-
-			line = sites2[count];
-			cout << line << endl;
-			try { http_content = net::get_file(line); }
-			catch (const exc::net& e) { log::error(line) << e.what() << endl; }
-
-			// (Make the page contents upper case, then make the search terms upper case, and bingo,
-			// case-insensitive search.)
-			for (char& c : http_content) c = toupper(c);
-
-			// Load the search terms from a file, one per line.
-			vector<string> hit_list;
-
-			string path = "BlackHitList.txt";
-			ifstream file(path);
-
-			// TODO Better error message.
-			if (!file.good())
-				throw exc::file(string("Could not open file '") + path + string("' for reading.'"));
-
-			// Load each search term, converting to upper case as we go.
-			for (string line; std::getline(file, line);)
-			{
-				for (char& c : line) c = toupper(c);
-				hit_list.emplace_back(line);
-			}
-
-			// For each word in `hit_list`, search for it, and count it once if any occurrences are found.
-			size_t hits = 0;
-			std::ofstream out;
-
-			out.open(trainingdata, std::ios_base::app);
-			if (!hit_list.empty()) out << "\nin: ";
-			for (const string& s : hit_list)
-			{
-				if (http_content.find(s) != string::npos)
-				{
-					++hits;
-					std::ofstream outfile;
-
-					outfile.open(trainingdata, std::ios_base::app);
-					outfile << "1.0 ";
-					continue;
-				}
-				else
-				{
-					std::ofstream outfile;
-
-					outfile.open(trainingdata, std::ios_base::app);
-					outfile << "0.0 ";
-				}
-			}
-			std::ofstream outfile2;
-
-			outfile2.open(trainingdata, std::ios_base::app);
-			outfile2 << "\nout: 0.0";
-
-			cout << "HitList word matches: " << hits;
-			count++;
-		}
-
-		return;
+	return;
 		
     // TODO Do stuff!
 

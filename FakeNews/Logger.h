@@ -45,7 +45,7 @@ class Logger
         _err(err)
     { }
 
-    ostream& operator()(const string& file = "", size_t line = 0, size_t column = 0);
+    ostream& operator()(const string& which = "", size_t line = 0, size_t column = 0);
 
     // We wrap wrap all these... there's got to be a better way...
     ostream& operator<<(const string& value);

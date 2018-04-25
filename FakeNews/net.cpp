@@ -38,8 +38,7 @@ Address::Address(const string& address):
 
     std::smatch m;
 
-    if (!std::regex_search(address, m, r))
-        throw exc::format(string("Invalid URL '") + address + '\'');
+    if (!std::regex_search(address, m, r)) throw exc::format("Invalid URL", address);
 
     _protocol = m[2];
     _resource = m[3];
@@ -50,7 +49,7 @@ std::string get_file(const std::string& address)
 {
     CURL* handle = curl_easy_init();
 
-    if (!handle) throw exc::net("Could not initialise libcurl");
+    if (!handle) throw exc::net("Failed to initialise session", "libcurl");
 
     struct sstring response;
     response.data = NULL;
@@ -60,22 +59,22 @@ std::string get_file(const std::string& address)
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1);
+    
+    // Yeah, I know this is insecure. But it's sure as hell easier than finding out how to get SSL
+    // certificates on Windows...
+    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0);
 
     // TODO perhaps we could use a user agent here?
-    // curl_easy_setopt(handle, CURLOPT_USERAGENT, "some_user_agent");
+    // curl_easy_setopt(handle, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        // "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36");
 
     CURLcode status = curl_easy_perform(handle);
     curl_easy_cleanup(handle);
 
-    string result = response.data;
-    free(response.data);
+    if (status != CURLE_OK) throw exc::net(curl_easy_strerror(status), address);
 
-    if (status != CURLE_OK)
-    {
-        std::stringstream ss;
-        ss << "Could not get file at '" << address << "': " << curl_easy_strerror(status);
-        throw exc::net(ss.str());
-    }
+    string result(response.data);
+    free(response.data);
 
     return result;
 }

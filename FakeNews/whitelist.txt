@@ -15,7 +15,7 @@ ft.com
 independent.co.uk
 nature.com
 nbcnews.com
-nhk.or.jp
+www.nhk.or.jp
 npr.org
 propublica.org
 reuters.com
