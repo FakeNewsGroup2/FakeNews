@@ -4,6 +4,7 @@
 #include <fstream>
 #include <exception>
 #include <memory>
+#include <algorithm>
 
 #include <cstdlib>
 
@@ -23,12 +24,8 @@
 #include "HitListEstimator.h"
 
 #include <map>
-#include <vector>
-#include <iostream>
-#include <cstdlib>
 #include <cassert>
 #include <cmath>
-//#include <fstream>
 #include <sstream>
 
 #include <stdio.h>
@@ -96,6 +93,20 @@ class FakeNews
         estimate(const article::Article& article,
         const std::map<string, std::pair<estimator::Estimator*, float>>& estimators);
 
+    // Loads a file line by line into a vector. Every line in the file is an element in the final
+    // vector. Every line has leading/trailing whitespace removed, blank lines are removed
+    // (including those consisting of only whitespace), and duplicate lines are removed. This
+    // function prints a warning containing any duplicate lines that were found (up to a certain
+    // number to avoid screen spam.) Because this calls `fs::load_lines()` which in turn calls
+    // `std::getline()`, it depends on the platform which line endings it expects.
+    // path:     The path to the file to load.
+    // contents: What the file contains, to be printed in the warning message. (e.g. 'file contains
+    //           duplicate lines.') Defaults to 'lines.'
+    // case_s:   Whether to search for duplicates case-sensitively. Defaults to false.
+    // Throws anything `fs::load_lines()` throws.
+    vector<string> load_clean_warn(const string& path, const string& contents = "lines",
+        bool case_s = false);
+
     template<typename T> void display_vector(const string& label, const vector<T>& vec)
     {
         cout << label;
@@ -159,26 +170,50 @@ void FakeNews::run(int argc, char* argv[])
     for (const string& path : fs::get_files(article_dir))
         articles.emplace(path, std::move(article::Article(path)));
 
-    // TODO Have a whitelist/blacklist-loading function which has an error if it's not in the right
-    // format, removes blank entries, strips leading/trailing whitespace and warns about duplicates.
-    // Use it here. (Use something similar for hitlist too.)
-    vector<string> whitelist = fs::load_lines("whitelist.txt");
-    vector<string> blacklist = fs::load_lines("blacklist.txt");
-    vector<string> hitlist   = fs::load_lines("hitlist.txt");
+    vector<net::Address> whitelist;
+    vector<net::Address> blacklist;
+
+    // Try and load the whitelist and blacklist.
+    {
+        vector<string> lines = load_clean_warn("whitelist.txt", "URLs");
+        for (string& s : lines) whitelist.emplace_back(std::move(s));
+        
+        lines = load_clean_warn("blacklist.txt", "URLs");
+        for (string& s : lines) blacklist.emplace_back(std::move(s));
+    }
     
+    // TODO Make sure hitlist entries don't contain any spaces or stupid symbols.
+    vector<string> hitlist = load_clean_warn("hitlist.txt");
+
+    // Make sure hitlist entries don't contain any spaces or punctuation.
+    for (decltype(hitlist.size()) i = 0; i < hitlist.size(); ++i)
+    {
+        for (char c : hitlist[i])
+        {
+            // This is silly because it depends on the current locale and only works for ASCII, but
+            // who cares. Sorry everybody who doesn't speak English. You're probably used to
+            // computers hating you by now.
+            
+            // TODO This line number doesn't account for duplicates being removed. We need to do
+            // this check before removing duplicates. Fix it.
+            if (isspace(c) || (c != '-' && ispunct(c)))
+                throw exc::format("Invalid hitlist entry", hitlist[i], i + 1);
+        }
+    }
+
     // We build it up as a string, then write it all at the end in one go. This is so that, if
     // something fails along the way, we don't overwrite the existing training data.
     std::stringstream ss;
     ss << "topology: " << hitlist.size() << ' ' << hitlist.size() * 2 << " 1";
 
     // TODO Don't repeat this, make a function.
-    for (const string& site : whitelist)
+    for (const net::Address& site : whitelist)
     {
         string html;
         
-        log::log(site) << "Getting page..." << endl;
+        log::log(site.full()) << "Getting page..." << endl;
 
-        try                       { html = util::upper(net::get_file(site));   }
+        try                       { html = util::upper(net::get_file(site.full()));   }
         catch (const exc::net& e) { log::error(e.which()) << e.what() << endl; }
         
         ss << "\nin:";
@@ -189,13 +224,13 @@ void FakeNews::run(int argc, char* argv[])
         ss << "\nout: 1.0";
     }
 
-    for (const string& site : blacklist)
+    for (const net::Address& site : blacklist)
     {
         string html;
 
-        log::log(site) << "Getting page..." << endl;
+        log::log(site.full()) << "Getting page..." << endl;
 
-        try                       { html = util::upper(net::get_file(site));   }
+        try                       { html = util::upper(net::get_file(site.full()));   }
         catch (const exc::net& e) { log::error(e.which()) << e.what() << endl; }
 
         ss << "\nin:";
@@ -264,4 +299,34 @@ std::map<string, std::pair<estimator::Estimate, float>>
     }
 
     return result;
+}
+
+vector<string> FakeNews::load_clean_warn(const string& path, const string& contents, bool case_s)
+{
+    vector<string> lines = fs::load_lines(path);
+    for (string& line : lines) util::trim(line);
+
+    // Remove duplicates/blank entries. Since we called `util::trim()` on each line, lines which
+    // consisted of just whitespace will also be removed.
+    vector<string*> duplicates = util::cleanup(lines, case_s);
+
+    if (!duplicates.empty())
+    {
+        // Only print up to this many duplicates in the warning message. (Don't want to spam them.)
+        int max_to_print = 10;
+
+        std::stringstream ss;
+        
+        ss << "File contains duplicate " << contents << ": '" << *duplicates[0] << "'";
+        
+        for (decltype(duplicates.size()) i = 1; i < min(duplicates.size(), max_to_print); ++i)
+            ss << ", '" << *duplicates[i] << "'";
+
+        if (duplicates.size() > max_to_print)
+            ss << " (and " << (duplicates.size() - max_to_print) << " more)";
+
+        log::warning(path) << ss.str() << endl;
+    }
+
+    return lines;
 }
