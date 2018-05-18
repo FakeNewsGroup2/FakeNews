@@ -1,9 +1,15 @@
 #include "util.h"
 
+#include <iostream>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <algorithm>
 
+#include "fs.h"
+#include "log.h"
+
+using std::endl;
 using std::string;
 using std::vector;
 
@@ -59,6 +65,36 @@ vector<string*> cleanup(vector<string>& v, bool case_s)
     }
 
     return duplicates;
+}
+
+vector<string> load_clean_warn(const string& path, const string& contents, bool case_s)
+{
+    vector<string> lines = fs::load_lines(path);
+    for (string& line : lines) util::trim(line);
+
+    // Remove duplicates/blank entries. Since we called `util::trim()` on each line, lines which
+    // consisted of just whitespace will also be removed.
+    vector<string*> duplicates = util::cleanup(lines, case_s);
+
+    if (!duplicates.empty())
+    {
+        // Only print up to this many duplicates in the warning message. (Don't want to spam them.)
+        decltype(duplicates.size()) max_to_print = 10;
+
+        std::stringstream ss;
+        
+        ss << "File contains duplicate " << contents << ": '" << *duplicates[0] << "'";
+
+        for (decltype(duplicates.size()) i = 1; i < min(duplicates.size(), max_to_print); ++i)
+            ss << ", '" << *duplicates[i] << "'";
+
+        if (duplicates.size() > max_to_print)
+            ss << " (and " << (duplicates.size() - max_to_print) << " more)";
+
+        log::warning(path) << ss.str() << endl;
+    }
+
+    return lines;
 }
 
 }

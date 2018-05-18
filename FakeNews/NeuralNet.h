@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <sstream>
 
 namespace fakenews
 {
@@ -48,13 +49,13 @@ private:
 class Training
 {
 public:
-	Training(const std::string &filename);
+    Training(const std::string &trainingData): n_trainingDataFile(trainingData) { }
 	bool isEof(void) { return n_trainingDataFile.eof(); }
 	void getStructure(std::vector<unsigned> &structure);
 	size_t getNextInputs(std::vector<double> &inputVals);
 	size_t getTargetOutputs(std::vector<double> &targetOutputVals);
 private:
-	std::ifstream n_trainingDataFile;
+	std::stringstream n_trainingDataFile;
 };
 
 class Network

@@ -28,8 +28,8 @@ class BlackWhiteEstimator : public Estimator
     BlackWhiteEstimator(const article::Article* article, const std::string& blacklist,
         const std::string& whitelist):
         Estimator(article),
-        _blacklist(fs::load_lines(blacklist)),
-        _whitelist(fs::load_lines(whitelist))
+        _blacklist(),
+        _whitelist()
     {
         // TODO remove blank entries from the black/whitelist
         // TODO if there are any sites present in both lists, throw something

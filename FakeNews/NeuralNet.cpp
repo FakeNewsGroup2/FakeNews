@@ -38,10 +38,7 @@ void Training::getStructure(vector<unsigned> &Structure)
 	}
 	return;
 }
-Training::Training(const string &filename): n_trainingDataFile()
-{
-	n_trainingDataFile.open(filename.c_str());
-}
+
 size_t Training::getNextInputs(vector<double> &inputVals)
 {
 	inputVals.clear();

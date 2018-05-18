@@ -93,23 +93,25 @@ class FakeNews
         estimate(const article::Article& article,
         const std::map<string, std::pair<estimator::Estimator*, float>>& estimators);
 
-    // Loads a file line by line into a vector. Every line in the file is an element in the final
-    // vector. Every line has leading/trailing whitespace removed, blank lines are removed
-    // (including those consisting of only whitespace), and duplicate lines are removed. This
-    // function prints a warning containing any duplicate lines that were found (up to a certain
-    // number to avoid screen spam.) Because this calls `fs::load_lines()` which in turn calls
-    // `std::getline()`, it depends on the platform which line endings it expects.
-    // path:     The path to the file to load.
-    // contents: What the file contains, to be printed in the warning message. (e.g. 'file contains
-    //           duplicate lines.') Defaults to 'lines.'
-    // case_s:   Whether to search for duplicates case-sensitively. Defaults to false.
-    // Throws anything `fs::load_lines()` throws.
-    vector<string> load_clean_warn(const string& path, const string& contents = "lines",
-        bool case_s = false);
+    // Makes the training data for the neural network.
+    // whitelist_path: The path to the whitelist file to load.
+    // blacklist_path: The path to the blacklist file to load.
+    // hitlist_path:   The path to the hitlist file to load.
+    // Returns a string containing the training data. The caller can write this to a file wherever
+    // it wants. 
+    // Throws anything `load_clean_warn()` throws.
+    // Throws anything `net::Address(const string&)` throws.
+    // Throws `exc::format()` if a hitlist entry contains any spaces or punctuation. (Hyphens are
+    // allowed, leading/trailing whitespace is ignored.)
+    string make_training_data(const string& whitelist_path, const string& blacklist_path, const
+        string& hitlist_path);
 
-    // TODO Document this.
-    // Returns a string containing the training data.
-    string make_training_data(const string& whitelist_path, const string& blacklist_path);
+    // Makes a line of training data by counting words from a hitlist.
+    // page:    The page to count words on.
+    // hitlist: A list of words.
+    // Returns the 'in' line.
+    // TODO Make `page` an `Article`.
+    string training_line(const string& page, const vector<string>& hitlist);
 
     template<typename T> void display_vector(const string& label, const vector<T>& vec)
     {
@@ -169,8 +171,10 @@ void FakeNews::run(int argc, char* argv[])
         {
             case '1':
             {
+                // TODO Somewhere, copy the training data loads of times.
                 string training_path = "training_data.txt";
-                string training_data = make_training_data("blacklist.txt", "whitelist.txt");
+                string training_data = make_training_data("blacklist.txt", "whitelist.txt",
+                    "hitlist.txt");
                 log::log(training_path) << "Writing training data..." << endl;
                 std::ofstream file(training_path);
                 if (!file.good()) throw exc::file(fs::error(), training_path);
@@ -218,11 +222,18 @@ void FakeNews::run(int argc, char* argv[])
 
     // TODO Create and use a load of `Estimator`s on all the URLs, weight their estimates and
     // produce an average confidence.
-
-    return;
 	
+    string data_path = "training_data.txt";
+    std::stringstream training_data;
+
+    {
+        std::ifstream data_file(data_path);
+        if (!data_file) throw exc::file(fs::error(), data_path);
+        training_data << data_file.rdbuf();
+    }
+
     // TODO Put this away somewhere.
-	neuralnet::Training trainData("training_data.txt");
+	neuralnet::Training trainData(training_data.str());
 	vector<unsigned> Structure;
 	trainData.getStructure(Structure);
 	neuralnet::Network myNetwork(Structure);
@@ -230,8 +241,8 @@ void FakeNews::run(int argc, char* argv[])
 	int trainingPass = 0;
 	while (!trainData.isEof()) {
 		++trainingPass;
-		cout << "\nPass " << trainingPass << endl;
 		if (trainData.getNextInputs(inputVals) != Structure[0]) break;
+        cout << "\nPass " << trainingPass << endl;
         display_vector("Inputs:", inputVals);
 		myNetwork.feedForward(inputVals);
 		myNetwork.getResults(resultVals);
@@ -267,52 +278,22 @@ std::map<string, std::pair<estimator::Estimate, float>>
     return result;
 }
 
-vector<string> FakeNews::load_clean_warn(const string& path, const string& contents, bool case_s)
-{
-    vector<string> lines = fs::load_lines(path);
-    for (string& line : lines) util::trim(line);
-
-    // Remove duplicates/blank entries. Since we called `util::trim()` on each line, lines which
-    // consisted of just whitespace will also be removed.
-    vector<string*> duplicates = util::cleanup(lines, case_s);
-
-    if (!duplicates.empty())
-    {
-        // Only print up to this many duplicates in the warning message. (Don't want to spam them.)
-        int max_to_print = 10;
-
-        std::stringstream ss;
-        
-        ss << "File contains duplicate " << contents << ": '" << *duplicates[0] << "'";
-        
-        for (decltype(duplicates.size()) i = 1; i < min(duplicates.size(), max_to_print); ++i)
-            ss << ", '" << *duplicates[i] << "'";
-
-        if (duplicates.size() > max_to_print)
-            ss << " (and " << (duplicates.size() - max_to_print) << " more)";
-
-        log::warning(path) << ss.str() << endl;
-    }
-
-    return lines;
-}
-
-string FakeNews::make_training_data(const string& whitelist_path, const string& blacklist_path)
+string FakeNews::make_training_data(const string& whitelist_path, const string& blacklist_path,
+    const string& hitlist_path)
 {
     vector<net::Address> whitelist;
     vector<net::Address> blacklist;
 
     // Try and load the whitelist and blacklist.
     {
-        vector<string> lines = load_clean_warn(whitelist_path, "URLs");
+        vector<string> lines = util::load_clean_warn(whitelist_path, "URLs");
         for (string& s : lines) whitelist.emplace_back(std::move(s));
         
-        lines = load_clean_warn(blacklist_path, "URLs");
+        lines = util::load_clean_warn(blacklist_path, "URLs");
         for (string& s : lines) blacklist.emplace_back(std::move(s));
     }
     
-    // TODO Make sure hitlist entries don't contain any spaces or stupid symbols.
-    vector<string> hitlist = load_clean_warn("hitlist.txt");
+    vector<string> hitlist = util::load_clean_warn(hitlist_path);
 
     // Make sure hitlist entries don't contain any spaces or punctuation.
     for (decltype(hitlist.size()) i = 0; i < hitlist.size(); ++i)
@@ -326,7 +307,8 @@ string FakeNews::make_training_data(const string& whitelist_path, const string& 
             // TODO This line number doesn't account for duplicates being removed. We need to do
             // this check before removing duplicates. Fix it.
             if (isspace(c) || (c != '-' && ispunct(c)))
-                throw exc::format("Invalid hitlist entry", hitlist[i], i + 1);
+                throw exc::format(string("Invalid hitlist entry '") + hitlist[i] + "'",
+                    hitlist_path, i + 1);
         }
     }
 
@@ -335,40 +317,32 @@ string FakeNews::make_training_data(const string& whitelist_path, const string& 
     std::stringstream ss;
     ss << "topology: " << hitlist.size() << ' ' << hitlist.size() * 2 << " 1";
 
-    // TODO Don't repeat this, make a function.
     for (const net::Address& site : whitelist)
     {
-        string html;
-        
-        log::log(site.full()) << "Getting page..." << endl;
-
-        try                       { html = util::upper(net::get_file(site.full()));   }
-        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl; }
-        
-        ss << "\nin:";
-        
-        for (const string& word : hitlist)
-            ss << (html.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0");
-
+        log::log(site.full()) << "Getting whitelisted page..." << endl;
+        string html = util::upper(net::get_file(site.full()));
+        ss << training_line(html, hitlist);
         ss << "\nout: 1.0";
     }
 
     for (const net::Address& site : blacklist)
     {
-        string html;
-
-        log::log(site.full()) << "Getting page..." << endl;
-
-        try                       { html = util::upper(net::get_file(site.full()));   }
-        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl; }
-
-        ss << "\nin:";
-
-        for (const string& word : hitlist)
-            ss << (html.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0");
-
+        log::log(site.full()) << "Getting blacklisted page..." << endl;
+        string html = util::upper(net::get_file(site.full()));
+        ss << training_line(html, hitlist);
         ss << "\nout: 0.0";
     }
 
     return ss.str();
+}
+
+string FakeNews::training_line(const string& page, const vector<string>& hitlist)
+{
+    string result = "in: ";
+    string page_upper = util::upper(page);
+
+    for (const string& word : hitlist)
+        result += page.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0";
+
+    return result;
 }

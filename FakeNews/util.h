@@ -32,6 +32,20 @@ void trim(std::string& s);
 // change.
 std::vector<std::string*> cleanup(std::vector<std::string>& v, bool case_s = false);
 
+// Loads a file line by line into a vector. Every line in the file is an element in the final
+// vector. Every line has leading/trailing whitespace removed, blank lines are removed
+// (including those consisting of only whitespace), and duplicate lines are removed. This
+// function prints a warning containing any duplicate lines that were found (up to a certain
+// number to avoid screen spam.) Because this calls `fs::load_lines()` which in turn calls
+// `std::getline()`, it depends on the platform which line endings it expects.
+// path:     The path to the file to load.
+// contents: What the file contains, to be printed in the warning message. (e.g. 'file contains
+//           duplicate lines.') Defaults to 'lines.'
+// case_s:   Whether to search for duplicates case-sensitively. Defaults to false.
+// Throws anything `fs::load_lines()` throws.
+std::vector<std::string> load_clean_warn(const std::string& path,
+    const std::string& contents = "lines", bool case_s = false);
+
 }
 
 }
