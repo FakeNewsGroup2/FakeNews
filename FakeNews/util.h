@@ -4,6 +4,9 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
+
+#include <cstdlib>
 
 namespace fakenews
 {
@@ -45,6 +48,16 @@ std::vector<std::string*> cleanup(std::vector<std::string>& v, bool case_s = fal
 // Throws anything `fs::load_lines()` throws.
 std::vector<std::string> load_clean_warn(const std::string& path,
     const std::string& contents = "lines", bool case_s = false);
+
+// Shuffles the elements in a vector into a random order, using C's `rand()` function seeded with
+// the current time.
+// v: The vector to shuffle.
+template<typename T> void shuffle(std::vector<T>& v)
+{
+    // Unfortunately, you can't implement templates in a separate file.
+    std::srand((unsigned int)std::time(NULL));
+    for (T& t : v) std::swap(t, v[std::rand() % v.size()]);
+}
 
 }
 

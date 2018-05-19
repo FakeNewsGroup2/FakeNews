@@ -59,9 +59,6 @@
     <ClInclude Include="Article.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ExampleEstimator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="BlackWhiteEstimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>

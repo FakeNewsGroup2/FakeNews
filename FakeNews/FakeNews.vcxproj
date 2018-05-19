@@ -124,6 +124,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <SubSystem>Console</SubSystem>
     </Link>
     <PostBuildEvent>
       <Command>XCOPY "$(SolutionDir)"\lib\*.dll "$(TargetDir)" /D /K /Y</Command>
@@ -151,7 +152,6 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="net.h" />
-    <ClInclude Include="ExampleEstimator.h" />
     <ClInclude Include="NeuralNet.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
