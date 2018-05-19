@@ -96,6 +96,16 @@ vector<string> load_lines(const string& path)
     return lines;
 }
 
+string read_to_string(const string& path)
+{
+    if (path.empty()) throw exc::arg("Argument empty", "path");
+    std::stringstream ss;
+    std::ifstream file(path);
+    if (!file) throw exc::file(fs::error(), path);
+    ss << file.rdbuf();
+    return ss.str();
+}
+
 }
 
 }

@@ -223,17 +223,14 @@ void FakeNews::run(int argc, char* argv[])
     // TODO Create and use a load of `Estimator`s on all the URLs, weight their estimates and
     // produce an average confidence.
 	
-    string data_path = "training_data.txt";
-    std::stringstream training_data;
-
-    {
-        std::ifstream data_file(data_path);
-        if (!data_file) throw exc::file(fs::error(), data_path);
-        training_data << data_file.rdbuf();
-    }
+    string training_data = fs::read_to_string("training_data.txt");
 
     // TODO Put this away somewhere.
-	neuralnet::Training trainData(training_data.str());
+    // TODO Somewhere put the 'in' line for the article we're evaluating on the end of the training
+    // data. If the training data 'in' lines have a different number of inputs to the current
+    // hitlist, the hitlist has changed since the training data was generated, and we have a
+    // problem.
+	neuralnet::Training trainData(training_data);
 	vector<unsigned> Structure;
 	trainData.getStructure(Structure);
 	neuralnet::Network myNetwork(Structure);

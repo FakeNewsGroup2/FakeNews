@@ -30,6 +30,13 @@ std::vector<std::string> load_lines(const std::string& path);
 // Throws `exc::file` if the directory at `path` could not be read.
 std::vector<std::string> get_files(const std::string& path);
 
+// Reads the entire contents of a file to a string.
+// path: The path to the file to load.
+// Returns a string with the contents of the file.
+// Throws `exc::file` if the file at `path` could not be opened for reading.
+// Throws `exc::arg` if `path` is empy.
+std::string read_to_string(const std::string& path);
+
 }
 
 }
