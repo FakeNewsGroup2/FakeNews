@@ -97,6 +97,19 @@ vector<string> load_clean_warn(const string& path, const string& contents, bool 
     return lines;
 }
 
+string::size_type occurrences(const string& haystack, const string& needle)
+{
+    string::size_type result = 0, pos = 0;
+
+    while ((pos = haystack.find(needle, pos)) != std::string::npos)
+    {
+        ++result;
+        pos += needle.size();
+    }
+
+    return result;
+}
+
 }
 
 }

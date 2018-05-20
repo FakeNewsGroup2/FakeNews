@@ -12,6 +12,9 @@
 
 #include "NeuralNet.h"
 #include "log.h"
+#include "net.h"
+#include "util.h"
+#include "exc.h"
 
 using namespace std;
 
@@ -20,6 +23,92 @@ namespace fakenews
 
 namespace neuralnet
 {
+
+string make_training_data(const string& whitelist_path, const string& blacklist_path,
+    const string& wordlist_path, int repetitions)
+{
+    vector<net::Address> whitelist;
+    vector<net::Address> blacklist;
+
+    // Try and load the whitelist and blacklist.
+    {
+        vector<string> lines = util::load_clean_warn(whitelist_path, "URLs");
+        for (string& s : lines) whitelist.emplace_back(std::move(s));
+        
+        lines = util::load_clean_warn(blacklist_path, "URLs");
+        for (string& s : lines) blacklist.emplace_back(std::move(s));
+    }
+    
+    vector<string> wordlist = util::load_clean_warn(wordlist_path);
+
+    // Make sure wordlist entries don't contain any spaces or punctuation.
+    for (decltype(wordlist.size()) i = 0; i < wordlist.size(); ++i)
+    {
+        for (char c : wordlist[i])
+        {
+            // This is silly because it depends on the current locale and only works for ASCII, but
+            // who cares. Sorry everybody who doesn't speak English. You're probably used to
+            // computers hating you by now.
+            
+            // This could have a line number, if I wasn't so lazy.
+            if (isspace(c) || (c != '-' && ispunct(c)))
+                throw exc::format(string("Invalid wordlist entry '") + wordlist[i] + "'",
+                    wordlist_path);
+        }
+    }
+
+    std::stringstream ss;
+
+    ss << "topology: " << wordlist.size() << ' ' << wordlist.size() * 2 << " 1";
+
+    // We want to repeat the training data. Therefore we push each 'piece' (i.e. an 'in' line
+    // followed by an 'out' line) to this multiple times, then shuffle the pieces.
+    vector<std::pair<string, string>> pieces;
+
+    // TODO Maybe if it turns out to be easy, you could multithread this.
+
+    for (const net::Address& site : whitelist)
+    {
+        log::log(site.full()) << "Getting whitelisted page..." << endl;
+        
+        string html;
+        try                       { html = util::upper(net::get_file(site.full())); }
+        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl;      }
+
+        for (int i = 0; i < repetitions; ++i)
+            pieces.emplace_back(std::move(training_line(html, wordlist)), "out: 1.0");
+    }
+
+    for (const net::Address& site : blacklist)
+    {
+        log::log(site.full()) << "Getting blacklisted page..." << endl;
+        
+        string html;
+        try                       { html = util::upper(net::get_file(site.full())); }
+        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl;      }
+
+        for (int i = 0; i < repetitions; ++i)
+            pieces.emplace_back(std::move(training_line(html, wordlist)), "out: 0.0");
+    }
+
+    // Now shuffle the pieces and add them.
+    util::shuffle(pieces);
+    for (std::pair<string, string>& p : pieces)
+        ss << endl << std::move(p.first) << endl << std::move(p.second);
+
+    return ss.str();
+}
+
+string training_line(const string& page, const vector<string>& wordlist)
+{
+    string result = "in:";
+    string page_upper = util::upper(page);
+
+    for (const string& word : wordlist)
+        result += page.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0";
+
+    return result;
+}
 
 void Training::getStructure(vector<unsigned> &Structure)
 {
@@ -178,7 +267,7 @@ Network::Network(const vector<unsigned> &Structure):
 		unsigned numOutputs = layerNum == Structure.size() - 1 ? 0 : Structure[layerNum + 1];
 		for (unsigned neuronNum = 0; neuronNum <= Structure[layerNum]; ++neuronNum) {
 			n_layers.back().push_back(A_Neuron(numOutputs, neuronNum));
-			log::log << "Neuron created" << endl;
+			// log::log << "Neuron created" << endl;
 		}
 		n_layers.back().back().setOutputVal(1.0);
 	}

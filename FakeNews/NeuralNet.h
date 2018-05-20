@@ -10,6 +10,29 @@ namespace fakenews
 
 namespace neuralnet
 {
+// Makes the training data for the neural network from whitelisted sites, blacklisted sites, and
+// a list of words to look for. Also repeats the training data, shuffling all the articles into
+// a random order.
+// whitelist_path: The path to the whitelist file to load.
+// blacklist_path: The path to the blacklist file to load.
+// wordlist_path:  The path to the wordlist file to load.
+// repetitions:    The number of times to repeat the training data. (Including the first, so '3'
+//                 means the data occurs 3 times total.)
+// Returns a string containing the training data. The caller can write this to a file wherever
+// it wants. 
+// Throws anything `load_clean_warn()` throws.
+// Throws anything `net::Address(const string&)` throws.
+// Throws `exc::format()` if a wordlist entry contains any spaces or punctuation. (Hyphens are
+// allowed, leading/trailing whitespace is ignored.)
+std::string make_training_data(const std::string& whitelist_path, const std::string& blacklist_path,
+    const std::string& wordlist_path, int repetitions);
+
+// Makes a line of training data by counting words from a wordlist.
+// page:     The page to count words on.
+// wordlist: A list of words.
+// Returns the 'in' line.
+// TODO Make `page` an `Article`.
+std::string training_line(const std::string& page, const std::vector<std::string>& wordlist);
 
 struct Weights
 {
@@ -54,6 +77,15 @@ public:
 	void getStructure(std::vector<unsigned> &structure);
 	size_t getNextInputs(std::vector<double> &inputVals);
 	size_t getTargetOutputs(std::vector<double> &targetOutputVals);
+    
+    // Please, forgive me God for what I am about to do...
+    void clearStream() { n_trainingDataFile.clear(); }
+    template<typename T> std::stringstream& operator<<(T& t)
+    {
+        n_trainingDataFile << t;
+        return n_trainingDataFile;
+    }
+
 private:
 	std::stringstream n_trainingDataFile;
 };

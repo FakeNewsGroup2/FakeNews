@@ -23,6 +23,7 @@
 #include "BlackWhiteEstimator.h"
 #include "NeuralNet.h"
 #include "HitListEstimator.h"
+#include "NeuralNetEstimator.h"
 
 #include <map>
 #include <cassert>
@@ -52,6 +53,14 @@ using std::vector;
 using std::ifstream;
 
 using namespace fakenews;
+
+// Just for testing.
+void pause()
+{
+    cout << "Press Enter to continue..." << endl;
+    std::cin.clear();
+    std::cin.get();
+}
 
 // We have a class to wrap the whole program, for two reasons:
 // We can initialise/de-initialise libraries cleanly and safely using RAII (constructor/destructor)
@@ -95,62 +104,11 @@ class FakeNews
         estimate(const article::Article& article,
         const std::map<string, std::pair<estimator::Estimator*, float>>& estimators);
 
-    // Makes the training data for the neural network from whitelisted sites, blacklisted sites, and
-    // a hitlist of words to look for. Also repeats the training data, shuffling all the articles
-    // into a random order.
-    // whitelist_path: The path to the whitelist file to load.
-    // blacklist_path: The path to the blacklist file to load.
-    // hitlist_path:   The path to the hitlist file to load.
-    // repetitions:    The number of times to repeat the training data. (Including the first, so '3'
-    //                 means the data occurs 3 times total.)
-    // Returns a string containing the training data. The caller can write this to a file wherever
-    // it wants. 
-    // Throws anything `load_clean_warn()` throws.
-    // Throws anything `net::Address(const string&)` throws.
-    // Throws `exc::format()` if a hitlist entry contains any spaces or punctuation. (Hyphens are
-    // allowed, leading/trailing whitespace is ignored.)
-    string make_training_data(const string& whitelist_path, const string& blacklist_path, const
-        string& hitlist_path, int repetitions);
-
-    // Makes a line of training data by counting words from a hitlist.
-    // page:    The page to count words on.
-    // hitlist: A list of words.
-    // Returns the 'in' line.
-    // TODO Make `page` an `Article`.
-    string training_line(const string& page, const vector<string>& hitlist);
-
-    // Loads the training data from a file, adding all the articles to the bottom of it.
-    // training_path: The path to the training data file.
-    // hitlist_path:  The path to the hitlist file.
-    // articles:      The articles to add to the bottom. It's a map because it's a map in `run()`
-    //                and I can't be bothered to change it, so there. The keys aren't actually
-    //                touched.
-    // Throws `exc::format` if the topology could not be read from the training data file. It does
-    // NOT throw anything if the rest of the file is wrong. (It doesn't check.)
-    // Throws `exc::format` if the topology of the training data does not equal the size of the
-    // hitlist.
-    // Throws anything `fs::load_lines()` throws.
-    string load_training_data(const string& training_path, const string& hitlist_path,
-        const map<string, article::Article>& articles);
-
-    template<typename T> void display_vector(const string& label, const vector<T>& vec)
-    {
-        cout << label;
-        for (const T& v : vec) cout << ' ' << v;
-        cout << endl;
-    }
-
-    void pause()
-    {
-        cout << "Press Enter to continue..." << endl;
-        std::cin.clear();
-        std::cin.get();
-    }
-
     // All the file paths.
     const string _WHITELIST     = "whitelist.txt";
     const string _BLACKLIST     = "blacklist.txt";
     const string _HITLIST       = "hitlist.txt";
+    const string _WORDLIST      = "hitlist.txt";
     const string _TRAINING_DATA = "training_data.txt";
 };
 
@@ -174,6 +132,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    pause();
     return 0;
 }
 
@@ -197,9 +156,9 @@ void FakeNews::run(int argc, char* argv[])
         {
             case '1':
             {
-                // TODO Somewhere, copy the training data loads of times.
                 log::log(_TRAINING_DATA) << "Making training data..." << endl;
-                string training_data = make_training_data(_WHITELIST, _BLACKLIST, _HITLIST, 8);
+                string training_data = neuralnet::make_training_data(_WHITELIST, _BLACKLIST,
+                    _WORDLIST, 8);
                 log::log(_TRAINING_DATA) << "Writing training data..." << endl;
                 std::ofstream file(_TRAINING_DATA);
                 if (!file.good()) throw exc::file(fs::error(), _TRAINING_DATA);
@@ -248,59 +207,28 @@ void FakeNews::run(int argc, char* argv[])
     // TODO Create and use a load of `Estimator`s on all the URLs, weight their estimates and
     // produce an average confidence.
 
-    string training_data = load_training_data(_TRAINING_DATA, _HITLIST, articles);
-    
+    if (articles.empty()) return;
+
+    log::log << "Teaching the neural network..." << endl;
+
+    estimator::NeuralNetEstimator nne(&(*(articles.cbegin())).second, _TRAINING_DATA, _WORDLIST);
+
+    for (const auto& p : articles)
     {
-        std::ofstream test_output(R"end(C:\Users\Ethan\Desktop\test_output.txt)end");
-        test_output << training_data;
+        cout << endl;
+
+        log::log << "Evaluating article..." << endl;
+        
+        cout << p.second.address().full() << endl;
+        cout << p.second.headline() << endl;
+        
+        cout << "evaluating..." << endl;
+        
+        estimator::Estimate e = nne.estimate();
+        
+        cout << "\rveracity: " << e.veracity << endl;
+        cout << "confidence: " << e.confidence << endl;
     }
-
-    // TODO Put this away somewhere.
-    // TODO Somewhere put the 'in' line for the article we're evaluating on the end of the training
-    // data. If the training data 'in' lines have a different number of inputs to the current
-    // hitlist, the hitlist has changed since the training data was generated, and we have a
-    // problem.
-	neuralnet::Training trainData(training_data);
-	vector<unsigned> Structure;
-	trainData.getStructure(Structure);
-	neuralnet::Network myNetwork(Structure);
-	vector<double> inputVals, targetVals, resultVals;
-	int trainingPass = 0;
-	while (!trainData.isEof()) {
-		++trainingPass;
-		if (trainData.getNextInputs(inputVals) != Structure[0]) break;
-
-        myNetwork.feedForward(inputVals);
-		myNetwork.getResults(resultVals);
-		trainData.getTargetOutputs(targetVals);
-        assert(targetVals.size() == Structure.back());
-		myNetwork.backProp(targetVals);
-
-        // Only print every 250 passes.
-        if (!(trainingPass % 250))
-        {
-            cout << "\nPass " << trainingPass << endl;
-            display_vector("Inputs:", inputVals);
-            display_vector("Outputs:", resultVals);
-            display_vector("Targets:", targetVals);
-            cout << "Net recent average error: " << myNetwork.getRecentAverageError() << endl;
-        }
-	}
-
-    // Print the last pass.
-    cout << "\nPass " << trainingPass << endl;
-    display_vector("Inputs:", inputVals);
-    display_vector("Outputs:", resultVals);
-    display_vector("Targets:", targetVals);
-    cout << "Net recent average error: " << myNetwork.getRecentAverageError() << endl;
-
-    // TODO The last articles.size() passes are the ones whose results we care about. Get them and
-    // use them. Or perhaps we should only use the last pass and do the whole learning again every
-    // time.
-
-    cout << '\n';
-	log::success << "Everything went well!" << endl;
-    pause();
 }
 
 std::map<string, std::pair<estimator::Estimate, float>>
@@ -320,144 +248,4 @@ std::map<string, std::pair<estimator::Estimate, float>>
     }
 
     return result;
-}
-
-string FakeNews::make_training_data(const string& whitelist_path, const string& blacklist_path,
-    const string& hitlist_path, int repetitions)
-{
-    vector<net::Address> whitelist;
-    vector<net::Address> blacklist;
-
-    // Try and load the whitelist and blacklist.
-    {
-        vector<string> lines = util::load_clean_warn(whitelist_path, "URLs");
-        for (string& s : lines) whitelist.emplace_back(std::move(s));
-        
-        lines = util::load_clean_warn(blacklist_path, "URLs");
-        for (string& s : lines) blacklist.emplace_back(std::move(s));
-    }
-    
-    vector<string> hitlist = util::load_clean_warn(hitlist_path);
-
-    // Make sure hitlist entries don't contain any spaces or punctuation.
-    for (decltype(hitlist.size()) i = 0; i < hitlist.size(); ++i)
-    {
-        for (char c : hitlist[i])
-        {
-            // This is silly because it depends on the current locale and only works for ASCII, but
-            // who cares. Sorry everybody who doesn't speak English. You're probably used to
-            // computers hating you by now.
-            
-            // TODO This line number doesn't account for duplicates being removed. We need to do
-            // this check before removing duplicates. Fix it.
-            if (isspace(c) || (c != '-' && ispunct(c)))
-                throw exc::format(string("Invalid hitlist entry '") + hitlist[i] + "'",
-                    hitlist_path, i + 1);
-        }
-    }
-
-    std::stringstream ss;
-
-    ss << "topology: " << hitlist.size() << ' ' << hitlist.size() * 2 << " 1";
-
-    // We want to repeat the training data. Therefore we push each 'piece' (i.e. an 'in' line
-    // followed by an 'out' line) to this multiple times, then shuffle the pieces.
-    vector<std::pair<string, string>> pieces;
-
-    // TODO Maybe if it turns out to be easy, you could multithread this.
-
-    for (const net::Address& site : whitelist)
-    {
-        log::log(site.full()) << "Getting whitelisted page..." << endl;
-        
-        string html;
-        try                       { html = util::upper(net::get_file(site.full())); }
-        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl;      }
-
-        for (int i = 0; i < repetitions; ++i)
-            pieces.emplace_back(std::move(training_line(html, hitlist)), "out: 1.0");
-    }
-
-    for (const net::Address& site : blacklist)
-    {
-        log::log(site.full()) << "Getting blacklisted page..." << endl;
-        
-        string html;
-        try                       { html = util::upper(net::get_file(site.full())); }
-        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl;      }
-
-        for (int i = 0; i < repetitions; ++i)
-            pieces.emplace_back(std::move(training_line(html, hitlist)), "out: 0.0");
-    }
-
-    // Now shuffle the pieces and add them.
-    util::shuffle(pieces);
-    for (std::pair<string, string>& p : pieces)
-        ss << endl << std::move(p.first) << endl << std::move(p.second);
-
-    return ss.str();
-}
-
-string FakeNews::training_line(const string& page, const vector<string>& hitlist)
-{
-    string result = "in:";
-    string page_upper = util::upper(page);
-
-    for (const string& word : hitlist)
-        result += page.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0";
-
-    return result;
-}
-
-string FakeNews::load_training_data(const string& training_path, const string& hitlist_path,
-        const map<string, article::Article>& articles)
-{
-    // Load the training data. We do it this way to make sure the code is line-ending-agnostic.
-    string training_data;
-
-    {
-        std::stringstream ss;
-        vector<string> lines = fs::load_lines(training_path);
-        
-        if (!lines.empty()) ss << std::move(lines[0]);
-        
-        for (decltype(lines.size()) i = 1; i < lines.size(); ++i)
-            ss << endl << std::move(lines[i]);
-
-        training_data = ss.str();
-    }
-
-    // Here we find out what the topology is, so we can check it against the size of the hitlist.
-    // (Which we load soon.) If they are different, then we have a problem. (Because the hit list is
-    // newer than the training data.) Otherwise, everything's OK. (Actually it's not because the
-    // hitlist could be different but the same length, but oh well. I have a deadline to meet.)
-
-    static std::regex r(R"end(^topology: ([[:digit:]]+))end");
-    std::smatch m;
-
-    // If the training data is in the wrong format, explode.
-    if (!std::regex_search(training_data, m, r))
-        throw exc::format("Could not load training data: 'topology' line not present",
-            training_path, 1);
-
-    // Otherwise, since it consists of only digits, it should be safe to convert straight to an int.
-    // Of course this will fail if the topology is some obscenely large number, but who cares.
-    int topology = std::stoi(m[1]);
-
-    // TODO Use load_check_warn or whatever it was. And check if I accidentally used load_lines
-    // anywhere else.
-    vector<string> hitlist = fs::load_lines(hitlist_path);
-
-    if (topology != hitlist.size())
-        throw exc::format("Training data topology does not match hitlist size."
-            " (Probably hitlist is newer than training data)", training_path, 1);
-
-    // Now we add the current articles to the end of the training data.
-    std::stringstream ss;
-    ss << std::move(training_data);
-    
-    for (const auto& p : articles)
-        ss << endl << training_line(p.second.contents(), hitlist) << endl << "out: 0.0";
-
-    return ss.str();
 }

@@ -49,6 +49,12 @@ std::vector<std::string*> cleanup(std::vector<std::string>& v, bool case_s = fal
 std::vector<std::string> load_clean_warn(const std::string& path,
     const std::string& contents = "lines", bool case_s = false);
 
+// Counts the number of occurrences of one string within another.
+// haystack: The string to look within.
+// needle:   The string to look for.
+// Returns the number of occurrences.
+std::string::size_type occurrences(const std::string& haystack, const std::string& needle);
+
 // Shuffles the elements in a vector into a random order, using C's `rand()` function seeded with
 // the current time.
 // v: The vector to shuffle.
@@ -57,6 +63,19 @@ template<typename T> void shuffle(std::vector<T>& v)
     // Unfortunately, you can't implement templates in a separate file.
     std::srand((unsigned int)std::time(NULL));
     for (T& t : v) std::swap(t, v[std::rand() % v.size()]);
+}
+
+// Prints the contents of a vector in the format specified below.
+// label: The label to print before the contents of the vector. (See below for clarification.)
+// vec:   The vector to print.
+// Prints in this format:
+// Vector of Numbers: 1 2 3 4 5
+// ^---- label ----^  ^- vec -^
+template<typename T> void display_vector(const std::string& label, const std::vector<T>& vec)
+{
+    std::cout << label << ':';
+    for (const T& v : vec) std::cout << ' ' << v;
+    std::cout << std::endl;
 }
 
 }

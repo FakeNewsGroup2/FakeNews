@@ -140,6 +140,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="net.cpp" />
     <ClCompile Include="NeuralNet.cpp" />
+    <ClCompile Include="NeuralNetEstimator.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -153,6 +154,7 @@
     <ClInclude Include="Logger.h" />
     <ClInclude Include="net.h" />
     <ClInclude Include="NeuralNet.h" />
+    <ClInclude Include="NeuralNetEstimator.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
