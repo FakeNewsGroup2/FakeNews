@@ -10,6 +10,7 @@
 #include "log.h"
 #include "fs.h"
 #include "exc.h"
+#include "util.h"
 
 using std::endl;
 using std::string;
@@ -23,48 +24,16 @@ namespace estimator
 
 HitListEstimator::HitListEstimator(const article::Article* article, const string& path):
     Estimator(article),
-    _upper(_article->contents()),
-    _hitlist()
+    _upper(util::upper(_article->contents())),
+    _hitlist(util::load_clean_warn(path, "words"))
 {
-    std::ifstream file(path);
-
-    if (!file) throw exc::file(fs::error(), path);
-
-    // Load each line into a vector, converting to upper case as we go.
-    string line;
-    string line_upper = ""; // Store the upper case version in a copy so error messages contain the
-                            // original
-    string allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ- "; // The characters allowed in hit list entries.
-
-    for (decltype(_hitlist.size()) i = 1; std::getline(file, line); ++i)
-    {
-        for (string::size_type j = 0; j < line.size(); ++j)
-        {
-            char upper = toupper(line[j]);
-            line_upper.push_back(upper);
-
-            if (allowed.find(upper) == string::npos)
-            {
-                std::stringstream ss;
-
-                ss << "Invalid character '" << line[j] << "' in hit list entry '" << line
-                    << "', only '" << allowed << "' are allowed";
-
-                throw exc::format(ss.str(), path, i, j + 1);
-            }
-        }
-
-        if (std::find(_hitlist.cbegin(), _hitlist.cend(), line) != _hitlist.cend())
-            log::warning(path, i) << "Duplicate entry '" << line
-            << "' in hit list (case-insensitive)" << endl;
-
-        _hitlist.emplace_back(line);
-    }
-
     if (_hitlist.empty()) log::warning(path) << "Hit list is empty" << endl;
 
-    // Make the article copy upper case.
-    for (char& c : _upper) c = toupper(c);
+    // TODO Make sure that the hitlist doesn't contain weird characters. There's already code for
+    // this in the neural network... move it somewhere else and call it twice.
+
+    // Convert the hitlist to upper case, for case-insensitive search.
+    for (string& s : _hitlist) s = util::upper(std::move(s));
 }
 
 Estimate HitListEstimator::estimate()

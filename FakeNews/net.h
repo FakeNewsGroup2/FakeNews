@@ -19,6 +19,17 @@ class Address
     // Throws `exc::format` if the string isn't a valid URL.
     Address(const std::string& address);
 
+    // Equality operator. This doesn't just check to see if they are identical; it checks whether
+    // they are EQUIVALENT. So the following two URLs are the same:
+    // google.com/page?variable
+    // http://google.com/page#section
+    // https://www.google/page
+    // If they use different protocols, they are considered different. If there is no protocol, it
+    // is assumed to be HTTP. HTTP and HTTPS are considered the same.
+    // If adding 'www.' to the beginning of one of the 'resource' portions of the two addresses
+    // would make them the same, this part is considered the same.
+    bool operator==(const Address& a) const;
+
     // Getters. See the private variables for more info about these are.
     const std::string& protocol() const { return _protocol; } // Can be empty.
     const std::string& resource() const { return _resource; }

@@ -5,11 +5,14 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 
 #include "Estimator.h"
 #include "Article.h"
 #include "fs.h"
+#include "util.h"
+#include "net.h"
 
 namespace fakenews
 {
@@ -24,25 +27,47 @@ class BlackWhiteEstimator : public Estimator
     // article:   The first article to estimate.
     // blacklist: The path to a file of blacklisted sites.
     // whitelist: The path to a file of whitelisted sites.
-    // Throws anything `fs::load_lines()` throws.
-    BlackWhiteEstimator(const article::Article* article, const std::string& blacklist,
-        const std::string& whitelist):
+    // Throws `exc::format` if both the blacklist and whitelist contain an equivalent URL.
+    // Throws anything `util::load_clean_warn()` throws.
+    // Throws anything `net::Address(const string&)` throws.
+    BlackWhiteEstimator(const article::Article* article, const std::string& blacklist_path,
+        const std::string& whitelist_path):
         Estimator(article),
         _blacklist(),
         _whitelist()
     {
-        // TODO remove blank entries from the black/whitelist
-        // TODO if there are any sites present in both lists, throw something
-        // TODO if any of them aren't a valid URL, do something
+        vector<string> file_contents = util::load_clean_warn(blacklist_path);
+        
+        for (string& s : file_contents)
+            _blacklist.emplace_back(std::move(util::upper(std::move(s))));
+        
+        file_contents = util::load_clean_warn(whitelist_path);
+        for (string& s : file_contents)
+            _whitelist.emplace_back(std::move(util::upper(std::move(s))));
+
+        for (const net::Address& a_w : _whitelist)
+        {
+            for (const net::Address& a_b : _blacklist)
+            {
+                if (a_w == a_b)
+                {
+                    std::stringstream ss;
+                    ss << "Whitelist '" << whitelist_path << "' and blacklist '" << blacklist_path
+                        << "' contain equivalent URLs '" << a_w.full() << "' and '" << a_b.full()
+                        << "' (respectively)";
+                    throw exc::format(ss.str());
+                }
+            }
+        }
     }
 
     Estimate estimate()
     {
         // If we find the address in the whitelist, it's definitely legit.
-        // TODO Make this case-insensitive.
         if
         (
-            std::find(_whitelist.begin(), _whitelist.end(), _article->address().resource())
+            std::find(_whitelist.begin(), _whitelist.end(),
+                util::upper(_article->address().resource()))
             != _whitelist.end()
         )
         return Estimate { 1.0, 1.0 };
@@ -50,7 +75,8 @@ class BlackWhiteEstimator : public Estimator
         // If we find it in the blacklist, it's definitely not.
         else if
         (
-            std::find(_blacklist.begin(), _blacklist.end(), _article->address().resource())
+            std::find(_blacklist.begin(), _blacklist.end(),
+                util::upper(_article->address().resource()))
             != _blacklist.end()
         )
         return Estimate { 0.0, 1.0 };
@@ -59,8 +85,8 @@ class BlackWhiteEstimator : public Estimator
     }
 
     private:
-    std::vector<std::string> _blacklist;
-    std::vector<std::string> _whitelist;
+    std::vector<net::Address> _blacklist;
+    std::vector<net::Address> _whitelist;
 };
 
 }

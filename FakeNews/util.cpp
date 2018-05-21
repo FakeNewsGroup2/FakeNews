@@ -110,6 +110,11 @@ string::size_type occurrences(const string& haystack, const string& needle)
     return result;
 }
 
+bool starts_with(const string& s, const string& prefix)
+{
+    return prefix.size() <= s.size() && s.compare(0, prefix.size(), prefix) == 0;
+}
+
 }
 
 }

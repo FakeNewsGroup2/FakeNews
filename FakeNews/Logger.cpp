@@ -134,25 +134,27 @@ void print_colour(const string& msg, ConsoleColour colour, int flags)
 #endif
 
 // Makes the '(L123, C321) in 'file.txt':' part of the message.
-string info(const string& which, size_t line, size_t column)
+string info(const string& which = "", size_t line = 0, size_t column = 0)
 {
-    // TODO If `which` is the only one given, don't surround it with commas.
-
-    // `line` and `column` can be 0 for N/A, and `which` can be empty
-    // Really you should give a `which` if you give a line and column, but it won't try to stop you.
-    // `line` and `column` also only make logical sense if `which` is a file.
-    // (This is its own function because it's repeated loads.)
-    
     std::stringstream ss;
 
-    if (line)
+    if (line || column || !which.empty()) ss << '(';
+
+    if (line || column)
     {
-        ss << " (L" << setw(3) << setfill('0') << line;
-        if (column) ss << ", C" << setw(3) << setfill('0') << column;
+        if (line)   ss << "L" << setw(3) << setfill('0') << line;
+        if (line && column) ss << ", ";
+        if (column) ss << "C" << setw(3) << setfill('0') << column;
         ss << ')';
+
+        if (!which.empty()) ss << " in '";
     }
 
-    if (!which.empty()) ss << ' ' << (line || column ? "in " : "") << "'" << which << '\'';
+    if (!which.empty()) ss << which;
+
+    if ((line || column) && !which.empty()) ss << '\'';
+
+    if (!(line || column) && !which.empty()) ss << ')';
 
     ss << ':';
     return ss.str();

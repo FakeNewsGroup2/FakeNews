@@ -138,6 +138,9 @@ int main(int argc, char* argv[])
 
 void FakeNews::run(int argc, char* argv[])
 {
+    // TODO Make everything but the actual output print to stderr.
+    // TODO Make sure that no two articles have the same URL.
+
     // We don't bother catching any `exc::exception`s in this method. Let the caller handle them.
 
     string input;
@@ -217,12 +220,9 @@ void FakeNews::run(int argc, char* argv[])
     {
         cout << endl;
 
-        log::log << "Evaluating article..." << endl;
+        log::log(p.second.address().full()) << "Evaluating article..." << endl;
         
-        cout << p.second.address().full() << endl;
         cout << p.second.headline() << endl;
-        
-        cout << "evaluating..." << endl;
         
         estimator::Estimate e = nne.estimate();
         

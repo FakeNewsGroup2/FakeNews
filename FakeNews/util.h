@@ -55,6 +55,13 @@ std::vector<std::string> load_clean_warn(const std::string& path,
 // Returns the number of occurrences.
 std::string::size_type occurrences(const std::string& haystack, const std::string& needle);
 
+// Checks whether a string starts with a given prefix or not. Why the hell isn't this in the
+// standard library?
+// s:      The string to check.
+// prefix: The prefix to check for.
+// Returns true if `s` starts with `prefix`, false otherwise.
+bool starts_with(const std::string& s, const std::string& prefix);
+
 // Shuffles the elements in a vector into a random order, using C's `rand()` function seeded with
 // the current time.
 // v: The vector to shuffle.

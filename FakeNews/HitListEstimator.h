@@ -21,7 +21,7 @@ class HitListEstimator : public Estimator
     // contains a 'bad' word to look for.
     // article: The article to estimate.
     // path:    The path to the hit list.
-    // Throws `exc::file` if the file at `path` couldn't be opened for reading.
+    // Throws anything `util::load_clean_warn()` throws.
     HitListEstimator(const article::Article* article, const std::string& path);
     Estimate estimate();
 
