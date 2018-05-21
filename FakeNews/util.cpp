@@ -8,6 +8,7 @@
 
 #include "fs.h"
 #include "log.h"
+#include "exc.h"
 
 using std::endl;
 using std::string;
@@ -113,6 +114,55 @@ string::size_type occurrences(const string& haystack, const string& needle)
 bool starts_with(const string& s, const string& prefix)
 {
     return prefix.size() <= s.size() && s.compare(0, prefix.size(), prefix) == 0;
+}
+
+vector<string> load_words(const string& path, const string& contents, bool case_s)
+{
+    vector<string> words = load_clean_warn(path, contents, case_s);
+
+    for (string& word : words)
+    {
+        trim(word);
+
+        for (char c : word)
+        {
+            // This is silly because it depends on the current locale and only works for ASCII, but
+            // who cares. Sorry everybody who doesn't speak English. You're probably used to
+            // computers hating you by now.
+            
+            // This could have a line number, if I wasn't so lazy.
+            if (isspace(c) || (c != '-' && ispunct(c)))
+            {
+                stringstream ss;
+                ss << "Word '" << word << "' contains illegal character '" << c << '\'';
+                throw exc::format(ss.str(), path);
+            }
+        }
+    }
+
+    return words;
+}
+
+string::size_type count_words(const string& s)
+{
+    if (s.empty()) return 0;
+
+    string::size_type words = 0;
+
+    auto it = s.cbegin();
+
+    while (true)
+    {
+        while (it != s.cend() && isspace(*it)) ++it;
+        if (it == s.cend()) break;
+
+        ++words;
+
+        while (it != s.cend() && !isspace(*it++));
+        if (it == s.cend()) break;
+    }
+
+    return words;
 }
 
 }

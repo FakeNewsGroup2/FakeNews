@@ -39,23 +39,7 @@ string make_training_data(const string& whitelist_path, const string& blacklist_
         for (string& s : lines) blacklist.emplace_back(std::move(s));
     }
     
-    vector<string> wordlist = util::load_clean_warn(wordlist_path);
-
-    // Make sure wordlist entries don't contain any spaces or punctuation.
-    for (decltype(wordlist.size()) i = 0; i < wordlist.size(); ++i)
-    {
-        for (char c : wordlist[i])
-        {
-            // This is silly because it depends on the current locale and only works for ASCII, but
-            // who cares. Sorry everybody who doesn't speak English. You're probably used to
-            // computers hating you by now.
-            
-            // This could have a line number, if I wasn't so lazy.
-            if (isspace(c) || (c != '-' && ispunct(c)))
-                throw exc::format(string("Invalid wordlist entry '") + wordlist[i] + "'",
-                    wordlist_path);
-        }
-    }
+    vector<string> wordlist = util::load_words(wordlist_path);
 
     std::stringstream ss;
 

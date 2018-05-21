@@ -23,7 +23,7 @@ struct Estimate
 class Estimator
 {
     public:
-    Estimator(const article::Article* article): _article(article) { }
+    Estimator(const article::Article* article): _article(article) {  }
     Estimator(const Estimator& e): _article(e._article) { }
     Estimator& operator= (const Estimator& e) { _article = e._article; return *this; }
 

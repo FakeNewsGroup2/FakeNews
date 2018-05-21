@@ -60,9 +60,6 @@ Address::Address(const string& address):
 
 bool Address::operator==(const Address& a) const
 {
-    // TODO If there is a slash on the end, and there is no dot between the slash before that and
-    // the end, remove the slash on the end.
-
     // This seems stupid, and it is, but we're making copies anyway by converting the parts to upper
     // case, so screw it. (This is for case-insensitivity.)
     Address a1 = Address(util::upper(_full));

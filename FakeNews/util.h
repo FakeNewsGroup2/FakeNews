@@ -35,7 +35,7 @@ void trim(std::string& s);
 // change.
 std::vector<std::string*> cleanup(std::vector<std::string>& v, bool case_s = false);
 
-// Loads a file line by line into a vector. Every line in the file is an element in the final
+// Loads a file line-by-line into a vector. Every line in the file is an element in the final
 // vector. Every line has leading/trailing whitespace removed, blank lines are removed
 // (including those consisting of only whitespace), and duplicate lines are removed. This
 // function prints a warning containing any duplicate lines that were found (up to a certain
@@ -61,6 +61,21 @@ std::string::size_type occurrences(const std::string& haystack, const std::strin
 // prefix: The prefix to check for.
 // Returns true if `s` starts with `prefix`, false otherwise.
 bool starts_with(const std::string& s, const std::string& prefix);
+
+// A wrapper for `load_clean_warn()`, loading a file line-by-line into a vector, but strips
+// leading/trailing whitespace from each line, and makes sure that each line contains no spaces or
+// punctuation. (Hyphens are allowed.)
+// For the parameters, see `load_clean_warn()`.
+// Throws `exc::format` if any of the words contain spaces or punctuation.
+// Throws anything `load_clean_warn()` throws.
+std::vector<std::string> load_words(const std::string& path, const std::string& contents = "words",
+    bool case_s = false);
+
+// Counts the number of words in a string. A 'word' is just any sequence of characters which are not
+// a space (according to `isspace()`) delimited by either spaces or the ends of the string.
+// s: The string to count the words of.
+// Returns the number of words in `s`.
+std::string::size_type count_words(const std::string& s);
 
 // Shuffles the elements in a vector into a random order, using C's `rand()` function seeded with
 // the current time.

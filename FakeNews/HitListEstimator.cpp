@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cmath>
 
 #include "HitListEstimator.h"
 
@@ -24,52 +25,72 @@ namespace estimator
 
 HitListEstimator::HitListEstimator(const article::Article* article, const string& path):
     Estimator(article),
-    _upper(util::upper(_article->contents())),
-    _hitlist(util::load_clean_warn(path, "words"))
+    _hitlist(util::load_words(path))
 {
-    if (_hitlist.empty()) log::warning(path) << "Hit list is empty" << endl;
+    this->article(article);
 
-    // TODO Make sure that the hitlist doesn't contain weird characters. There's already code for
-    // this in the neural network... move it somewhere else and call it twice.
+    if (_hitlist.empty()) log::warning(path) << "Hit list is empty" << endl;
 
     // Convert the hitlist to upper case, for case-insensitive search.
     for (string& s : _hitlist) s = util::upper(std::move(s));
+}
+
+Estimator& HitListEstimator::article(const article::Article* article)
+{
+    _article = article;
+    _upper = util::upper(_article->contents());
+    _words = util::count_words(_upper);
+    return *this;
 }
 
 Estimate HitListEstimator::estimate()
 {
     Estimate result = Estimate { 0.0, 0.0 };
 
-    size_t hits = 0;
+    // If the article or hitlist are empty, just return with 0 confidence. This also prevents
+    // divide-by-zero errors further down the line.
+    if (!_words && _hitlist.empty()) return result;
 
-    for (const string& s : _hitlist) { if (_upper.find(s) != string::npos) { ++hits; continue; } }
+    string::size_type hits = 0;
 
-    log::log << "Hit list word matches: " << hits << endl;
+    // Finding the same word multiple times increases the number of hits.
+    for (const string& s: _hitlist) hits += util::occurrences(_upper, s);
 
-    // TODO The veracity estimate is ABSOLUTELY HORRIBLE, and should be replaced by something better
-    // ASAP.
+    // The veracity is based on the number of words found per article word. (This number is between
+    // 0 and 1.) For example, if no words are found, veracity should be 1. If every word is a match,
+    // veracity should be 0. There's a formula for this:
 
-    // It's the length of the article in bytes, divided by 5, then divided by the number of hits,
-    // and then (1 / that) to make it between 0 and 1. Then we invert it (subtract it from 1) 
-    // because we want a SMALLER number the more hits we have, not a larger one. By tweaking the '5' 
-    // higher, we can make each hit hurt the veracity more.
+    // (<proportion of words which match> - 1) ^ 10 = veracity.
 
-    // Basically we have the number of hits. We need to find a way to translate this into a
-    // 'fakeness' rating from 0 to 1. We should probably count the words in the article and base it
-    // on the proportion of words which are hits to words which aren't. We should also take the 
-    // length of our hitlist into consideration somehow, because a short hitlist is unreliable.
-    //
-    // Hell, a long hitlist is pretty unreliable, but oh well.
+    // We use a non-linear formula so that having only a few matches drastically reduces the
+    // veracity, and the more matches we have, the less it affects things. So 5% matches and 10%
+    // matches are very different, but 85% and 90% not so much.
 
-    // +1 so that if we have no hits, we get 0. (I think.)
-    result.veracity = 1 - (1.0f / ((_upper.size() / 5.0f) / (hits + 1)));
+    // The exponent is large because dicking around on a graph plotter, 10% of words matching equals
+    // about 35% veracity with an exponent of 10, which seems about right. Less matches greatly
+    // increase veracity, and more matches slightly decrease it.
 
-    // This might not actually be that crappy. It's just 1 divided by the number of entries in the
-    // hit list. Then we subtract that from 1. As we get more and more hitlist entries, the number
-    // converges towards 1.
+    result.veracity = std::pow(((float)hits / _words) - 1, 10);
 
-    // +1 so that if the hitlist is empty, we get 0.
-    result.confidence = 1 - (1.0f / (_hitlist.size() + 1));
+    // Next, we need to take the size of the hitlist into account. A huge hitlist is more likely to
+    // have matches regardless of the veracity of the article. Therefore a tiny hitlist should bring
+    // the veracity down, because if we had loads of matches but a really small hitlist, it seems
+    // more fake than an article with the same number of matches with a huge hitlist. (Even though
+    // the matches are the same of course.) I have a formula for this, too:
+
+    // 1 - (1 / ((<size of the hitlist> / 100) + 1)) = hitlist multiplier
+
+    // The '100' means that at 100 words, the veracity is halved. This number is just a guess
+    // at what seems sensible. As the number of hitlist words tends to infinity, the multiplier
+    // converges towards 1 (so no difference to the veracity.) A hitlist of 0 means that the article
+    // is always fake. (But the confidence will be 0 anyway in this case.)
+
+    result.confidence = 1 - ((double)1 / (((double)_hitlist.size() / 100) + 1));
+    result.veracity *= result.confidence;
+
+    // "Wait! Why did you set the confidence to this?" -- You
+    // It's because the confidence should be based on the size of the hitlist. This formula seems to
+    // perfectly describe what I reckon the confidence should be, so screw it.
 
     return result;
 }

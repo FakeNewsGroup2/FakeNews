@@ -31,7 +31,7 @@ NeuralNetEstimator::NeuralNetEstimator(const article::Article* article, const st
     _targets(),
     _results(),
     _pass(0),
-    _wordlist(util::load_clean_warn(wordlist_path, "words"))
+    _wordlist(util::load_words(wordlist_path, "words"))
 {
     string training_data = load_training_data(training_path);
 
@@ -68,10 +68,11 @@ Estimate NeuralNetEstimator::estimate()
     *_train_data << neuralnet::training_line(_article->contents(), _wordlist) << endl << "out: 0.0";
     do_pass();
 
-    float veracity = (float)_results[0]; // _results shouldn't be empty.... right?
+    float veracity = (float)_results[0]; // _results won't be empty.... right?
     if (veracity < 0) veracity = 0;
     else if (veracity > 1) veracity = 1;
 
+    // TODO Give a confidence estimate.
     return Estimate { veracity, 1.0 };
 }
 

@@ -20,10 +20,11 @@ namespace neuralnet
 //                 means the data occurs 3 times total.)
 // Returns a string containing the training data. The caller can write this to a file wherever
 // it wants. 
-// Throws anything `load_clean_warn()` throws.
-// Throws anything `net::Address(const string&)` throws.
 // Throws `exc::format()` if a wordlist entry contains any spaces or punctuation. (Hyphens are
 // allowed, leading/trailing whitespace is ignored.)
+// Throws anything `util::load_clean_warn()` throws.
+// Throws anything `util::load_words()` throws.
+// Throws anything `net::Address(const string&)` throws.
 std::string make_training_data(const std::string& whitelist_path, const std::string& blacklist_path,
     const std::string& wordlist_path, int repetitions);
 
