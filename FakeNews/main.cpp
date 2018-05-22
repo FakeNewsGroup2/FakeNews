@@ -82,8 +82,8 @@ class FakeNews
     void run(int argc, char* argv[]);
 
     private:
-    // Now this is a function signaure! Evaluates an article using all the estimators you give it.
-    // article:    The article to estimate.
+    // Now this is a function signaure! Runs all the estimators you give it. (You should set their
+    // articles using `estimator.article()` first of course.)
     // estimators: A `map` of `pair`s. The keys are the human-readable display names of the
     //             estimators, and the values go <estimator, desired weight>.
     // Returns a map, where the keys are the display names you passed into `estimators`, and the
@@ -101,8 +101,16 @@ class FakeNews
     // weights for you, depending on the number of `Estimator`s, to make them all add up to 1.
 
     std::map<string, std::pair<estimator::Estimate, float>>
-        estimate(const article::Article& article,
-        const std::map<string, std::pair<estimator::Estimator*, float>>& estimators);
+        estimate(const std::map<string, std::pair<estimator::Estimator*, float>>& estimators);
+
+    // Calculates the weighted average of the veracity and confidence of a load of estimates.
+    // estimates: This should be the return value of `estimate()`. (See `estimate()`.) The keys
+    //            aren't actually used for anything.
+    // Returns one `Estimate` containing the average veracity and confidence.
+    // This function does NOT check whether the weights are a valid value. If they aren't between 0
+    // and 1 and don't add up to 1, you'll just get the wrong answer.
+    estimator::Estimate
+        average(const std::map<string, std::pair<estimator::Estimate, float>>& estimates);
 
     // All the file paths.
     const string _WHITELIST     = "whitelist.txt";
@@ -203,48 +211,119 @@ void FakeNews::run(int argc, char* argv[])
     std::map<string, article::Article> articles;
     
     for (const string& path : fs::get_files(article_dir))
-        articles.emplace(path, std::move(article::Article(path)));
+    {
+        // Is the word 'article' starting to sound weird to you?
+        article::Article article = article::Article(path);
+        
+        // Make sure that the current article doesn't have an address we've already seen.
+        for (const auto& p : articles)
+        {
+            if (p.second.address() == article.address())
+            {
+                std::stringstream ss;
+                ss << "Articles '" << p.first << "' and '" << path << "' have equivalent URL"
+                    << endl;
+                throw exc::format(ss.str(), p.second.address().full());
+            }
+        }
 
-    // TODO Do stuff!
-
-    // TODO Create and use a load of `Estimator`s on all the URLs, weight their estimates and
-    // produce an average confidence.
+        articles.emplace(path, std::move(article));
+    }
 
     if (articles.empty()) return;
 
     log::log << "Teaching the neural network..." << endl;
 
-    estimator::NeuralNetEstimator nne(&(*(articles.cbegin())).second, _TRAINING_DATA, _WORDLIST);
+    // Just to avoid typing this out for convenience/readability.
+    const article::Article* first_article = &(*(articles.cbegin())).second;
 
+    // Create all the estimators.
+    log::log << "Loading blacklist and whitelist..." << endl;
+    estimator::BlackWhiteEstimator blackwhitelist(first_article, _BLACKLIST, _WHITELIST);
+
+    log::log << "Loading hitlist..." << endl;
+    estimator::HitListEstimator hitlist(first_article, _HITLIST);
+
+    log::log << "Training neural network..." << endl;
+    estimator::NeuralNetEstimator neuralnet(first_article, _TRAINING_DATA, _WORDLIST);
+
+    // Collect them together with weights for `estimate()`.
+    // TODO Change the weights from 1.
+    std::map<string, std::pair<estimator::Estimator*, float>> estimators;
+    estimators.emplace("blackwhitelist", std::make_pair(&blackwhitelist, 1.0f));
+    estimators.emplace("hitlist", std::make_pair(&hitlist, 1.0f));
+    estimators.emplace("neuralnet", std::make_pair(&neuralnet, 1.0f));
+
+    // TODO Somehow recalculate the weights after removing items with a confidence of 0.
+
+    // Now do the actual estimating.
     for (const auto& p : articles)
     {
-        cout << endl;
+        // Tell the estimators to use the new article.
+        for (const auto& p2 : estimators) p2.second.first->article(&p.second);
 
-        log::log(p.second.address().full()) << "Evaluating article..." << endl;
+        cout << "> \"" << p.first << '"' << endl;
         
-        cout << p.second.headline() << endl;
-        
-        estimator::Estimate e = nne.estimate();
-        
-        cout << "\rveracity: " << e.veracity << endl;
-        cout << "confidence: " << e.confidence << endl;
+        auto result = estimate(estimators);
+
+        estimator::Estimate avg = average(result);
+        cout << "veracity: " << avg.veracity << ", confidence: " << avg.confidence << endl;
+
+        for (const auto& p2 : result)
+        {
+            cout << p2.first << ": veracity: " << p2.second.first.veracity << ", confidence: "
+                << p2.second.first.confidence << ", weight: " << p2.second.second << endl;
+        }
+
+        cout << endl;
     }
 }
 
 std::map<string, std::pair<estimator::Estimate, float>>
-        FakeNews::estimate(const article::Article& article,
-        const std::map<string, std::pair<estimator::Estimator*, float>>& estimators)
+    FakeNews::estimate(const std::map<string, std::pair<estimator::Estimator*, float>>& estimators)
 {
-    // TODO Actually calculate the weights, you dickhead.
     std::map<string, std::pair<estimator::Estimate, float>> result;
 
-    for (const auto& name_estim : estimators)
-    {
-        float weight = name_estim.second.second;
-        if      (weight < 0) weight = 0;
-        else if (weight > 1) weight = 1;
+    // First we calculate the actual weights from the desired weights. For each desired weight, this
+    // is just <sum of all weights> / <desired weight>.
 
-        result.emplace(name_estim.first, std::make_pair(name_estim.second.first->article(&article).estimate(), weight));
+    float sum = 0;
+
+    for (const auto& p : estimators)
+    {
+        if (p.second.second > 1 || p.second.second < 0)
+        {
+            throw exc::arg(string("Invalid weight '") + to_string(p.second.second)
+                + "'; must be 0 <= weight <= 1", p.first);
+        }
+
+        sum += p.second.second;
+    }
+
+    for (const auto& p : estimators)
+    {
+        result.emplace
+        (
+            p.first,
+            std::make_pair(estimator::Estimate { 0, 0 }, p.second.second / sum)
+        );
+    }
+
+    // Now actually do the estimating. This is readable, lol.
+    for (const auto& p : estimators) result[p.first].first = p.second.first->estimate();
+
+    return result;
+}
+
+estimator::Estimate
+    FakeNews::average(const std::map<string, std::pair<estimator::Estimate, float>>& estimates)
+{
+    estimator::Estimate result = estimator::Estimate { 0, 0 };
+
+    for (const auto& p : estimates)
+    {
+        result.confidence += p.second.first.confidence * p.second.second;
+        result.veracity   += p.second.first.veracity * p.second.second;
     }
 
     return result;

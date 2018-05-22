@@ -30,8 +30,8 @@ size_t write_callback(char* p, size_t size, size_t nmemb, void* data);
 string strip_request(const string& s)
 {
     string result = s;
-    result.erase(std::find(result.cbegin(), result.cend(), '?'));
-    result.erase(std::find(result.cbegin(), result.cend(), '#'));
+    result.erase(std::find(result.cbegin(), result.cend(), '?') - result.cbegin());
+    result.erase(std::find(result.cbegin(), result.cend(), '#') - result.cbegin());
     if (result.back() == '/') result.pop_back();
     result.shrink_to_fit();
     return result;

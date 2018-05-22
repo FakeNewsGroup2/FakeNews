@@ -85,12 +85,19 @@ Estimate HitListEstimator::estimate()
     // converges towards 1 (so no difference to the veracity.) A hitlist of 0 means that the article
     // is always fake. (But the confidence will be 0 anyway in this case.)
 
-    result.confidence = 1 - ((double)1 / (((double)_hitlist.size() / 100) + 1));
+    result.confidence = (float)(1 - ((double)1 / (((double)_hitlist.size() / 100) + 1)));
     result.veracity *= result.confidence;
 
     // "Wait! Why did you set the confidence to this?" -- You
     // It's because the confidence should be based on the size of the hitlist. This formula seems to
     // perfectly describe what I reckon the confidence should be, so screw it.
+
+    // Now we do the same thing again with the size of the article, so tiny articles give less
+    // confidence.
+
+    result.confidence *= (float)(1 - ((double)1 / (((double)_words / 100) + 1)));
+
+    cout << "we got " << hits << " hits, so that's " << ((float)hits / _words) * 100 << "%" << endl;
 
     return result;
 }

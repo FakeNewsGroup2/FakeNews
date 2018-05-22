@@ -29,7 +29,7 @@ NeuralNetEstimator::NeuralNetEstimator(const article::Article* article, const st
     Estimator(article),
     _inputs(),
     _targets(),
-    _results(),
+    _outputs(),
     _pass(0),
     _wordlist(util::load_words(wordlist_path, "words"))
 {
@@ -68,7 +68,7 @@ Estimate NeuralNetEstimator::estimate()
     *_train_data << neuralnet::training_line(_article->contents(), _wordlist) << endl << "out: 0.0";
     do_pass();
 
-    float veracity = (float)_results[0]; // _results won't be empty.... right?
+    float veracity = (float)_outputs[0]; // _outputs won't be empty.... right?
     if (veracity < 0) veracity = 0;
     else if (veracity > 1) veracity = 1;
 
@@ -82,7 +82,7 @@ bool NeuralNetEstimator::do_pass()
     ++_pass;
     if (_train_data->getNextInputs(_inputs) != _structure[0]) return false;
     _network->feedForward(_inputs);
-    _network->getResults(_results);
+    _network->getResults(_outputs);
     _train_data->getTargetOutputs(_targets);
     if (_targets.size() != _structure.back()) throw exc::exception("AAAAAHHH!!!!!");
     _network->backProp(_targets);
@@ -104,7 +104,7 @@ void NeuralNetEstimator::print_pass(float percent)
     
     // Don't print the inputs, because it's going to be bloody long.
     // util::display_vector("inputs", _inputs);
-    util::display_vector("outputs", _results);
+    util::display_vector("outputs", _outputs);
     util::display_vector("targets", _targets);
     cout << "recent error: " << _network->getRecentAverageError() << endl;
 }

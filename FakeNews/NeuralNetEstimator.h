@@ -43,7 +43,7 @@ class NeuralNetEstimator : public Estimator
     neuralnet::Training* _train_data;
     neuralnet::Network* _network;
     std::vector<unsigned> _structure;
-    std::vector<double> _inputs, _targets, _results; // TODO change _results to _outputs
+    std::vector<double> _inputs, _targets, _outputs;
     unsigned _pass;
 
     // Loads the training data from a file, making sure that the topology matches the size of the

@@ -29,7 +29,7 @@ class Estimator
 
     virtual ~Estimator() { }
 
-    Estimator& article(const article::Article* article)
+    virtual Estimator& article(const article::Article* article)
     {
         _article = article;
         return *this;
