@@ -47,18 +47,19 @@ NeuralNetEstimator::NeuralNetEstimator(const article::Article* article, const st
 
     // TODO Really this is stupid, fix this...
     if (!do_pass()) return;
-    if (!shut_up) print_pass(0);
+    if (!shut_up) log::log("0") << print_pass();
 
     while (!_train_data->isEof())
     {
         if (!do_pass()) return;
 
         // Only print every 100 passes. (And if output isn't disabled of course.)
-        if (!shut_up && !(_pass % 100)) print_pass(((float)_pass / passes) * 100);
+        if (!shut_up && !(_pass % 100))
+            log::log(std::to_string(((float)_pass / passes) * 100)) << print_pass();
     }
 
     // Print the last pass.
-    if(!shut_up) print_pass(100);
+    if(!shut_up) log::log("100") << print_pass();
 }
 
 Estimate NeuralNetEstimator::estimate()
@@ -72,8 +73,8 @@ Estimate NeuralNetEstimator::estimate()
     if (veracity < 0) veracity = 0;
     else if (veracity > 1) veracity = 1;
 
-    // TODO Give a confidence estimate.
-    return Estimate { veracity, 1.0 };
+    // TODO Does this confidence estimate suck?
+    return Estimate { veracity, 1.0f - (float)_network->getRecentAverageError() };
 }
 
 bool NeuralNetEstimator::do_pass()
@@ -89,24 +90,18 @@ bool NeuralNetEstimator::do_pass()
     return true;
 }
 
-void NeuralNetEstimator::print_pass(float percent)
+string NeuralNetEstimator::print_pass()
 {
-    cout << endl;
-
-    if (percent == -1) log::log << "Pass " << _pass << endl;
-
-    else
-    {
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(2) << percent << '%';
-        log::log(ss.str()) << "Pass " << _pass << endl;
-    }
+    std::stringstream ss;
+    ss << endl << "Pass " << _pass << endl;
     
     // Don't print the inputs, because it's going to be bloody long.
-    // util::display_vector("inputs", _inputs);
-    util::display_vector("outputs", _outputs);
-    util::display_vector("targets", _targets);
-    cout << "recent error: " << _network->getRecentAverageError() << endl;
+    // ss << util::display_vector("inputs", _inputs);
+    ss << util::display_vector("outputs", _outputs);
+    ss << util::display_vector("targets", _targets);
+    ss << "recent error: " << _network->getRecentAverageError() << endl;
+
+    return ss.str();
 }
 
 string NeuralNetEstimator::load_training_data(const string& path)

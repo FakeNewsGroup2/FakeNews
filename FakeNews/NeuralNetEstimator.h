@@ -61,10 +61,9 @@ class NeuralNetEstimator : public Estimator
     // Returns false if there was some problem, true otherwise.
     bool do_pass();
 
-    // Prints the number of the current pass along with the outputs/targets/recent error.
-    // percent: The % complete that the whole operation is, to be printed in the message, fixed to 2
-    //          decimal places. If this is -1, don't print the % complete. Defaults to -1.
-    void print_pass(float percent = -1);
+    // Puts the number of the current pass along with the outputs/targets/recent error into a string
+    // and returns it for printing.
+    std::string print_pass();
 };
 
 }

@@ -93,11 +93,13 @@ template<typename T> void shuffle(std::vector<T>& v)
 // Prints in this format:
 // Vector of Numbers: 1 2 3 4 5
 // ^---- label ----^  ^- vec -^
-template<typename T> void display_vector(const std::string& label, const std::vector<T>& vec)
+template<typename T> std::string display_vector(const std::string& label, const std::vector<T>& vec)
 {
-    std::cout << label << ':';
-    for (const T& v : vec) std::cout << ' ' << v;
-    std::cout << std::endl;
+    std::stringstream ss;
+    ss << label << ':';
+    for (const T& v : vec) ss << ' ' << v;
+    ss << std::endl;
+    return ss.str();
 }
 
 }

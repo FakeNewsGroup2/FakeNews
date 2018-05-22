@@ -57,7 +57,7 @@ using namespace fakenews;
 // Just for testing.
 void pause()
 {
-    cout << "Press Enter to continue..." << endl;
+    cerr << "Press Enter to continue..." << endl;
     std::cin.clear();
     std::cin.get();
 }
@@ -89,6 +89,7 @@ class FakeNews
     // Returns a map, where the keys are the display names you passed into `estimators`, and the
     // values are a pair which goes <resulting estimate, weight>. The 'weight' is the real weight
     // that got calculated, not the desired weight (see below), so they all add up to 1.
+    // Throws `exc::arg` if one of the desired weights is < 0 or > 1.
     // Throws anything that the `estimate()` method on any of your estimators might throw.
 
     // 'Desired weight'
@@ -146,20 +147,17 @@ int main(int argc, char* argv[])
 
 void FakeNews::run(int argc, char* argv[])
 {
-    // TODO Make everything but the actual output print to stderr.
-    // TODO Make sure that no two articles have the same URL.
-
     // We don't bother catching any `exc::exception`s in this method. Let the caller handle them.
 
     string input;
-    cout << "Please enter:" << endl;
-    cout << "1) Generate training data (first time use)" << endl;
-    cout << "2) Evaluate articles" << endl;
-    cout << "3) Exit" << endl;
+    cerr << "Please enter:" << endl;
+    cerr << "1) Generate training data (first time use)" << endl;
+    cerr << "2) Evaluate articles" << endl;
+    cerr << "3) Exit" << endl;
 
     while (true)
     {
-        cout << "(1/2/3) > " << flush;
+        cerr << "(1/2/3) > " << flush;
         std::getline(cin, input);
         if (input.size() != 1) continue;
         
@@ -196,9 +194,9 @@ void FakeNews::run(int argc, char* argv[])
     // If there were no arguments given, prompt the user for a path.
     if (argc == 1)
     {
-        cout << "Article directory not supplied, please enter one: (Leave blank to cancel.)"
+        cerr << "Article directory not supplied, please enter one: (Leave blank to cancel.)"
             << endl;
-        cout << "> " << std::flush;
+        cerr << "> " << std::flush;
         getline(std::cin, article_dir);
         std::cin.clear();
         if (article_dir.empty()) return;
@@ -248,13 +246,10 @@ void FakeNews::run(int argc, char* argv[])
     estimator::NeuralNetEstimator neuralnet(first_article, _TRAINING_DATA, _WORDLIST);
 
     // Collect them together with weights for `estimate()`.
-    // TODO Change the weights from 1.
     std::map<string, std::pair<estimator::Estimator*, float>> estimators;
     estimators.emplace("blackwhitelist", std::make_pair(&blackwhitelist, 1.0f));
-    estimators.emplace("hitlist", std::make_pair(&hitlist, 1.0f));
-    estimators.emplace("neuralnet", std::make_pair(&neuralnet, 1.0f));
-
-    // TODO Somehow recalculate the weights after removing items with a confidence of 0.
+    estimators.emplace("hitlist", std::make_pair(&hitlist, 0.7f));
+    estimators.emplace("neuralnet", std::make_pair(&neuralnet, 0.9f));
 
     // Now do the actual estimating.
     for (const auto& p : articles)
@@ -284,33 +279,37 @@ std::map<string, std::pair<estimator::Estimate, float>>
 {
     std::map<string, std::pair<estimator::Estimate, float>> result;
 
-    // First we calculate the actual weights from the desired weights. For each desired weight, this
-    // is just <sum of all weights> / <desired weight>.
+    // Do the estimating. This is readable, lol. Weights are 0 for now.
+    for (const auto& p : estimators)
+        result.emplace(p.first, std::make_pair(p.second.first->estimate(), 0.0f));
 
+    // Now calculate the weights. We do this after estimating because we want to exclude results
+    // with a confidence of 0.
+
+    // Find the sum of all the weights, not counting those with a confidence of 0, checking for
+    // invalid values as we go.
     float sum = 0;
 
     for (const auto& p : estimators)
     {
         if (p.second.second > 1 || p.second.second < 0)
         {
-            throw exc::arg(string("Invalid weight '") + to_string(p.second.second)
-                + "'; must be 0 <= weight <= 1", p.first);
+            std::stringstream ss;
+            ss << "Invalid weight '" << to_string(p.second.second) << "' for estimator '" << p.first
+                << "; must be >= 0 and <= 1";
+            throw exc::arg(ss.str(), "estimators");
         }
 
-        sum += p.second.second;
+        if (result[p.first].first.confidence != 0.0f) sum += p.second.second;
     }
 
+    // Now use the sum to calculate the final weight (just desired / sum), but making it 0 if the
+    // confidence is 0.
     for (const auto& p : estimators)
     {
-        result.emplace
-        (
-            p.first,
-            std::make_pair(estimator::Estimate { 0, 0 }, p.second.second / sum)
-        );
+        auto& pair = result[p.first];
+        pair.second = pair.first.confidence == 0.0f ? 0.0f : p.second.second / sum;
     }
-
-    // Now actually do the estimating. This is readable, lol.
-    for (const auto& p : estimators) result[p.first].first = p.second.first->estimate();
 
     return result;
 }
@@ -322,8 +321,12 @@ estimator::Estimate
 
     for (const auto& p : estimates)
     {
-        result.confidence += p.second.first.confidence * p.second.second;
-        result.veracity   += p.second.first.veracity * p.second.second;
+        // Ignore results with a confidence of 0.
+        if (p.second.first.confidence != 0.0f)
+        {
+            result.confidence += p.second.first.confidence * p.second.second;
+            result.veracity   += p.second.first.veracity * p.second.second;
+        }
     }
 
     return result;

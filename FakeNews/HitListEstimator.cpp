@@ -97,8 +97,6 @@ Estimate HitListEstimator::estimate()
 
     result.confidence *= (float)(1 - ((double)1 / (((double)_words / 100) + 1)));
 
-    cout << "we got " << hits << " hits, so that's " << ((float)hits / _words) * 100 << "%" << endl;
-
     return result;
 }
 
