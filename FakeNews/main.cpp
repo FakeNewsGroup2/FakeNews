@@ -230,8 +230,6 @@ void FakeNews::run(int argc, char* argv[])
 
     if (articles.empty()) return;
 
-    log::log << "Teaching the neural network..." << endl;
-
     // Just to avoid typing this out for convenience/readability.
     const article::Article* first_article = &(*(articles.cbegin())).second;
 
