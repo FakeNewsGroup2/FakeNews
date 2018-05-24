@@ -47,7 +47,8 @@ NeuralNetEstimator::NeuralNetEstimator(const article::Article* article, const st
 
     // TODO Really this is stupid, fix this...
     if (!do_pass()) return;
-    if (!shut_up) log::log("0") << print_pass();
+    
+    if (!shut_up) log::log("0.00%") << print_pass();
 
     while (!_train_data->isEof())
     {
@@ -55,11 +56,20 @@ NeuralNetEstimator::NeuralNetEstimator(const article::Article* article, const st
 
         // Only print every 100 passes. (And if output isn't disabled of course.)
         if (!shut_up && !(_pass % 100))
-            log::log(std::to_string(((float)_pass / passes) * 100)) << print_pass();
+        {
+            std::stringstream ss;
+            ss << fixed << setprecision(2) << ((float)_pass / passes) * 100 << '%';
+            cout << endl;
+            log::log(ss.str()) << print_pass();
+        }
     }
 
     // Print the last pass.
-    if(!shut_up) log::log("100") << print_pass();
+    if (!shut_up)
+    {
+        cout << endl;
+        log::log("100.00%") << print_pass();
+    }
 }
 
 Estimate NeuralNetEstimator::estimate()

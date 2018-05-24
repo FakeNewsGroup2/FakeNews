@@ -32,7 +32,7 @@ string strip_request(const string& s)
     string result = s;
     result.erase(std::find(result.cbegin(), result.cend(), '?') - result.cbegin());
     result.erase(std::find(result.cbegin(), result.cend(), '#') - result.cbegin());
-    if (result.back() == '/') result.pop_back();
+    if (!result.empty() && result.back() == '/') result.pop_back();
     result.shrink_to_fit();
     return result;
 }
