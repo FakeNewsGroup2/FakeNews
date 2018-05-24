@@ -45,7 +45,7 @@ string make_training_data(const string& wordlist_path, const vector<article::Art
     {
         if (article.veracity() == article::VERACITY_UNKNOWN) continue;
 
-        string in_line = training_line(article.contents(), wordlist);
+        string in_line = training_line(article, wordlist);
 
         switch (article.veracity())
         {
@@ -68,13 +68,13 @@ string make_training_data(const string& wordlist_path, const vector<article::Art
     return ss.str();
 }
 
-string training_line(const string& page, const vector<string>& wordlist)
+string training_line(const article::Article& article, const vector<string>& wordlist)
 {
     string result = "in:";
-    string page_upper = util::upper(page);
+    string page_upper = util::upper(article.contents());
 
     for (const string& word : wordlist)
-        result += page.find(util::upper(word)) == string::npos ? " 0.0" : " 1.0";
+        result += article.contents().find(util::upper(word)) == string::npos ? " 0.0" : " 1.0";
 
     return result;
 }

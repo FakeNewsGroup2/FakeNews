@@ -30,8 +30,7 @@ std::string make_training_data(const std::string& wordlist_path,
 // page:     The page to count words on.
 // wordlist: A list of words.
 // Returns the 'in' line.
-// TODO Make `page` an `Article`.
-std::string training_line(const std::string& page, const std::vector<std::string>& wordlist);
+std::string training_line(const article::Article& article, const std::vector<std::string>& wordlist);
 
 struct Weights
 {
