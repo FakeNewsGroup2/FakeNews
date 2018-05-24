@@ -167,7 +167,7 @@ void FakeNews::run(int argc, char* argv[])
             {
                 log::log(_TRAINING_DATA) << "Making training data..." << endl;
                 string training_data = neuralnet::make_training_data(_WHITELIST, _BLACKLIST,
-                    _WORDLIST, 8);
+                    _WORDLIST, 20);
                 log::log(_TRAINING_DATA) << "Writing training data..." << endl;
                 std::ofstream file(_TRAINING_DATA);
                 if (!file.good()) throw exc::file(fs::error(), _TRAINING_DATA);
@@ -243,7 +243,7 @@ void FakeNews::run(int argc, char* argv[])
     estimator::HitListEstimator hitlist(first_article, _HITLIST);
 
     log::log << "Training neural network..." << endl;
-    estimator::NeuralNetEstimator neuralnet(first_article, _TRAINING_DATA, _WORDLIST);
+    estimator::NeuralNetEstimator neuralnet(first_article, _TRAINING_DATA, _WORDLIST, false);
 
     // Collect them together with weights for `estimate()`.
     std::map<string, std::pair<estimator::Estimator*, float>> estimators;

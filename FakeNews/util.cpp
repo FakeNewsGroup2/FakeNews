@@ -5,6 +5,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <regex>
 
 #include "fs.h"
 #include "log.h"
@@ -19,6 +20,9 @@ namespace fakenews
 
 namespace util
 {
+
+const std::regex REGEX_WORD(R"end(([^A-Za-z\-']|^)([A-Za-z\-']+)(?=[^A-Za-z\-']|$))end");
+const std::regex REGEX_WHITESPACE(R"end((\s|^)([^\s]+)(?=\s|$))end");
 
 string upper(const string& s)
 {
@@ -143,26 +147,34 @@ vector<string> load_words(const string& path, const string& contents, bool case_
     return words;
 }
 
-string::size_type count_words(const string& s)
+string::size_type count_words(const std::string& s)
 {
-    if (s.empty()) return 0;
+    return distance(sregex_iterator(s.cbegin(), s.cend(), REGEX_WHITESPACE), sregex_iterator());
+}
 
-    string::size_type words = 0;
+vector<string> split_words(const std::string& s)
+{
+    vector<string> result;
 
-    auto it = s.cbegin();
+    for (auto it = sregex_iterator(s.cbegin(), s.cend(), REGEX_WORD); it != sregex_iterator(); ++it)
+        result.emplace_back(smatch(*it)[2]);
 
-    while (true)
-    {
-        while (it != s.cend() && isspace(*it)) ++it;
-        if (it == s.cend()) break;
+    return result;
+}
 
-        ++words;
+vector<string> split_whitespace(const std::string& s)
+{
+    vector<string> result;
 
-        while (it != s.cend() && !isspace(*it++));
-        if (it == s.cend()) break;
-    }
+    for
+    (
+        auto it = sregex_iterator(s.cbegin(), s.cend(), REGEX_WHITESPACE);
+        it != sregex_iterator();
+        ++it
+    )
+        result.emplace_back(smatch(*it)[2]);
 
-    return words;
+    return result;
 }
 
 }

@@ -71,11 +71,23 @@ bool starts_with(const std::string& s, const std::string& prefix);
 std::vector<std::string> load_words(const std::string& path, const std::string& contents = "words",
     bool case_s = false);
 
-// Counts the number of words in a string. A 'word' is just any sequence of characters which are not
-// a space (according to `isspace()`) delimited by either spaces or the ends of the string.
+// Counts the number of words in a string. A 'word' is just any sequence of non-whitespace
+// characters surrounded by whitespace characters.
 // s: The string to count the words of.
 // Returns the number of words in `s`.
 std::string::size_type count_words(const std::string& s);
+
+// Splits a string into a vector of words. A 'word' is any sequence of alphanumeric characters (or
+// hyphens/apostrophes) surrounded by whitespace characters.
+// s: The string to split.
+// Returns a vector of all the words in `s`.
+std::vector<std::string> split_words(const std::string& s);
+
+// Splits a string into regions delimited by whitespace. (Same as `split_words()`, but uses the
+// simpler definition of 'word' from `count_words()` instead.)
+// s: The string to split.
+// Returns a vector of all the non-whitespace regions in `s`.
+std::vector<std::string> split_whitespace(const std::string& s);
 
 // Shuffles the elements in a vector into a random order, using C's `rand()` function seeded with
 // the current time.
