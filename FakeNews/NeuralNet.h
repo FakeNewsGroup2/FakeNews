@@ -5,28 +5,26 @@
 #include <vector>
 #include <sstream>
 
+#include "Article.h"
+
 namespace fakenews
 {
 
 namespace neuralnet
 {
-// Makes the training data for the neural network from whitelisted sites, blacklisted sites, and
-// a list of words to look for. Also repeats the training data, shuffling all the articles into
-// a random order.
-// whitelist_path: The path to the whitelist file to load.
-// blacklist_path: The path to the blacklist file to load.
+// Makes the training data for the neural network from articles and a list of words to look for.
+// Also repeats the training data, shuffling all the results into a random order.
+// articles:       A vector of loaded articles. Articles whose `veracity()` is unknown are just
+//                 skipped.
 // wordlist_path:  The path to the wordlist file to load.
 // repetitions:    The number of times to repeat the training data. (Including the first, so '3'
 //                 means the data occurs 3 times total.)
 // Returns a string containing the training data. The caller can write this to a file wherever
 // it wants. 
-// Throws `exc::format()` if a wordlist entry contains any spaces or punctuation. (Hyphens are
-// allowed, leading/trailing whitespace is ignored.)
-// Throws anything `util::load_clean_warn()` throws.
 // Throws anything `util::load_words()` throws.
-// Throws anything `net::Address(const string&)` throws.
-std::string make_training_data(const std::string& whitelist_path, const std::string& blacklist_path,
-    const std::string& wordlist_path, int repetitions);
+// Throws anything `Article(const string&)` throws.
+std::string make_training_data(const std::string& wordlist_path,
+    const std::vector<article::Article>& articles, int repetitions);
 
 // Makes a line of training data by counting words from a wordlist.
 // page:     The page to count words on.

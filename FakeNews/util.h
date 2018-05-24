@@ -63,10 +63,10 @@ std::string::size_type occurrences(const std::string& haystack, const std::strin
 bool starts_with(const std::string& s, const std::string& prefix);
 
 // A wrapper for `load_clean_warn()`, loading a file line-by-line into a vector, but strips
-// leading/trailing whitespace from each line, and makes sure that each line contains no spaces or
-// punctuation. (Hyphens are allowed.)
+// leading/trailing whitespace from each line, and makes sure that each line consists only of
+// letters, hyphens and apostrophes.
 // For the parameters, see `load_clean_warn()`.
-// Throws `exc::format` if any of the words contain spaces or punctuation.
+// Throws `exc::format` if any of the words contains illegal characters.
 // Throws anything `load_clean_warn()` throws.
 std::vector<std::string> load_words(const std::string& path, const std::string& contents = "words",
     bool case_s = false);

@@ -21,8 +21,8 @@ namespace fakenews
 namespace util
 {
 
-const std::regex REGEX_WORD(R"end(([^A-Za-z\-']|^)([A-Za-z\-']+)(?=[^A-Za-z\-']|$))end");
-const std::regex REGEX_WHITESPACE(R"end((\s|^)([^\s]+)(?=\s|$))end");
+const std::regex REGEX_WORD("[A-Za-z\\-']+");
+const std::regex REGEX_WHITESPACE("[^\\s]+");
 
 string upper(const string& s)
 {
@@ -130,15 +130,14 @@ vector<string> load_words(const string& path, const string& contents, bool case_
 
         for (char c : word)
         {
-            // This is silly because it depends on the current locale and only works for ASCII, but
-            // who cares. Sorry everybody who doesn't speak English. You're probably used to
-            // computers hating you by now.
+            // This is silly because it only works for English, but who cares. Sorry everybody who
+            // doesn't speak English. You're probably used to computers hating you by now.
             
             // This could have a line number, if I wasn't so lazy.
-            if (isspace(c) || (c != '-' && ispunct(c)))
+            if (!std::regex_match(word, std::smatch(), REGEX_WORD))
             {
                 stringstream ss;
-                ss << "Word '" << word << "' contains illegal character '" << c << '\'';
+                ss << "Word '" << word << "' contains illegal characters";
                 throw exc::format(ss.str(), path);
             }
         }
@@ -157,7 +156,7 @@ vector<string> split_words(const std::string& s)
     vector<string> result;
 
     for (auto it = sregex_iterator(s.cbegin(), s.cend(), REGEX_WORD); it != sregex_iterator(); ++it)
-        result.emplace_back(smatch(*it)[2]);
+        result.emplace_back(smatch(*it)[0]);
 
     return result;
 }
@@ -172,7 +171,7 @@ vector<string> split_whitespace(const std::string& s)
         it != sregex_iterator();
         ++it
     )
-        result.emplace_back(smatch(*it)[2]);
+        result.emplace_back(smatch(*it)[0]);
 
     return result;
 }

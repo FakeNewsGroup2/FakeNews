@@ -16,7 +16,9 @@ namespace article
 
 {
 
-Article::Article(const string& path): _address(nullptr)
+Article::Article(const string& path, ArticleVeracity veracity):
+    _address(nullptr),
+    _veracity(veracity)
 {
     vector<string> lines = fs::load_lines(path);
     

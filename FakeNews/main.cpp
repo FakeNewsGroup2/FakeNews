@@ -54,14 +54,6 @@ using std::ifstream;
 
 using namespace fakenews;
 
-// Just for testing.
-void pause()
-{
-    cerr << "Press Enter to continue..." << endl;
-    std::cin.clear();
-    std::cin.get();
-}
-
 // We have a class to wrap the whole program, for two reasons:
 // We can initialise/de-initialise libraries cleanly and safely using RAII (constructor/destructor)
 // We can throw exceptions and catch them in `main()`, so we only catch/log errors in one place.
@@ -113,6 +105,35 @@ class FakeNews
     estimator::Estimate
         average(const std::map<string, std::pair<estimator::Estimate, float>>& estimates);
 
+    // Generates a word frequency list for training the neural network. It just takes all the unique
+    // words from every article, orders them by frequency of occurrence, and removes the 5% most
+    // common ones.
+    // articles: The articles to analyse.
+    // Returns a vector of every word in the word list in descending order of frequency.
+    vector<string> generate_wordlist(const std::vector<article::Article>& articles);
+
+    // Gets a line of input from the user.
+    // inputs: The user is forced to enter something from this vector. If empty, the user can enter
+    //         anything. If the user enters nothing, an empty string will be returned regardless of
+    //         whether `inputs` contains any empty strings or not. (Use this for a 'cancel' option
+    //         or similar.) Defaults to empty.
+    // Returns the string that the user entered.
+    string get_input(const vector<string>& inputs = {});
+
+    // Loads every article in a folder, giving each one a particular veracity.
+    // path:     The path to a directory full of articles.
+    // veracity: The veracity of every article.
+    // Returns a map where the keys are the file paths, and the values are the articles themselves.
+    // Throws `exc::format` if two articles have an equivalent URL.
+    // Throws anything `fs::get_files()` throws.
+    // Throws anything `article::Article(const string&)` throws.
+    map<string, article::Article> load_articles(const string& path,
+        article::ArticleVeracity veracity = article::VERACITY_UNKNOWN);
+
+    // Ask the user whether or not to continue with a 'y/n' prompt.
+    // Returns true if the user answered 'y,' false if they answered 'n.'
+    bool cont();
+
     // All the file paths.
     const string _WHITELIST     = "whitelist.txt";
     const string _BLACKLIST     = "blacklist.txt";
@@ -141,7 +162,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    pause();
     return 0;
 }
 
@@ -149,126 +169,171 @@ void FakeNews::run(int argc, char* argv[])
 {
     // We don't bother catching any `exc::exception`s in this method. Let the caller handle them.
 
-    string input;
     cerr << "Please enter:" << endl;
-    cerr << "1) Generate training data (first time use)" << endl;
-    cerr << "2) Evaluate articles" << endl;
-    cerr << "3) Exit" << endl;
+    cerr << "1) Evaluate articles" << endl;
+    cerr << "2) Generate training data (first time use)" << endl;
+    cerr << "3) Generate wordlist (first time use)" << endl;
+    cerr << "4) Generate hitlist (first time use)" << endl;
+    cerr << "5) Exit" << endl;
 
-    while (true)
+    string input = get_input({ "1", "2", "3", "4", "5" });
+
+    if (input == "1")
     {
-        cerr << "(1/2/3) > " << flush;
-        std::getline(cin, input);
-        if (input.size() != 1) continue;
-        
-        switch (input[0])
-        {
-            case '1':
-            {
-                log::log(_TRAINING_DATA) << "Making training data..." << endl;
-                string training_data = neuralnet::make_training_data(_WHITELIST, _BLACKLIST,
-                    _WORDLIST, 20);
-                log::log(_TRAINING_DATA) << "Writing training data..." << endl;
-                std::ofstream file(_TRAINING_DATA);
-                if (!file.good()) throw exc::file(fs::error(), _TRAINING_DATA);
-                file << training_data << endl;
-                log::success << "Everything went well!" << endl;
-                return;
-            }
+        cerr << "Enter a path to a folder of unknown articles (leave blank to cancel):" << endl;
+        string path = get_input();
 
-            case '2':
-                goto after_loop;
-                break;
-            
-            case '3':
-                return;
-            
-            default:
-                continue;
-        }
-    }
-    after_loop:
+        if (path.empty()) return;
 
-    string article_dir;
+        map<string, article::Article> articles = load_articles(path);
 
-    // If there were no arguments given, prompt the user for a path.
-    if (argc == 1)
-    {
-        cerr << "Article directory not supplied, please enter one: (Leave blank to cancel.)"
-            << endl;
-        cerr << "> " << std::flush;
-        getline(std::cin, article_dir);
-        std::cin.clear();
-        if (article_dir.empty()) return;
-    }
-   
-    // Otherwise the first argument is the path.
-    else article_dir = argv[1];
+        if (articles.empty()) throw exc::file("Folder is empty", path);
 
-    // <full path to article, article>
-    std::map<string, article::Article> articles;
-    
-    for (const string& path : fs::get_files(article_dir))
-    {
-        // Is the word 'article' starting to sound weird to you?
-        article::Article article = article::Article(path);
-        
-        // Make sure that the current article doesn't have an address we've already seen.
+        // Just to avoid typing this out for convenience/readability.
+        const article::Article* first_article = &(*(articles.cbegin())).second;
+
+        // Create all the estimators.
+        log::log << "Loading blacklist and whitelist..." << endl;
+        estimator::BlackWhiteEstimator blackwhitelist(first_article, _BLACKLIST, _WHITELIST);
+
+        log::log << "Loading hitlist..." << endl;
+        estimator::HitListEstimator hitlist(first_article, _HITLIST);
+
+        log::log << "Training neural network..." << endl;
+        estimator::NeuralNetEstimator neuralnet(first_article, _TRAINING_DATA, _WORDLIST);
+
+        // Collect them together with weights for `estimate()`.
+        std::map<string, std::pair<estimator::Estimator*, float>> estimators;
+        estimators.emplace("blackwhitelist", std::make_pair(&blackwhitelist, 1.0f));
+        estimators.emplace("hitlist", std::make_pair(&hitlist, 0.7f));
+        estimators.emplace("neuralnet", std::make_pair(&neuralnet, 0.9f));
+
+        // Now do the actual estimating.
         for (const auto& p : articles)
         {
-            if (p.second.address() == article.address())
-            {
-                std::stringstream ss;
-                ss << "Articles '" << p.first << "' and '" << path << "' have equivalent URL"
-                    << endl;
-                throw exc::format(ss.str(), p.second.address().full());
-            }
-        }
+            // Tell the estimators to use the new article.
+            for (const auto& p2 : estimators) p2.second.first->article(&p.second);
 
-        articles.emplace(path, std::move(article));
+            cout << "> \"" << p.first << '"' << endl;
+
+            auto result = estimate(estimators);
+
+            estimator::Estimate avg = average(result);
+            cout << "veracity: " << avg.veracity << ", confidence: " << avg.confidence << endl;
+
+            for (const auto& p2 : result)
+            {
+                cout << p2.first << ": veracity: " << p2.second.first.veracity << ", confidence: "
+                    << p2.second.first.confidence << ", weight: " << p2.second.second << endl;
+            }
+
+            cout << endl;
+        }
     }
 
-    if (articles.empty()) return;
-
-    // Just to avoid typing this out for convenience/readability.
-    const article::Article* first_article = &(*(articles.cbegin())).second;
-
-    // Create all the estimators.
-    log::log << "Loading blacklist and whitelist..." << endl;
-    estimator::BlackWhiteEstimator blackwhitelist(first_article, _BLACKLIST, _WHITELIST);
-
-    log::log << "Loading hitlist..." << endl;
-    estimator::HitListEstimator hitlist(first_article, _HITLIST);
-
-    log::log << "Training neural network..." << endl;
-    estimator::NeuralNetEstimator neuralnet(first_article, _TRAINING_DATA, _WORDLIST, false);
-
-    // Collect them together with weights for `estimate()`.
-    std::map<string, std::pair<estimator::Estimator*, float>> estimators;
-    estimators.emplace("blackwhitelist", std::make_pair(&blackwhitelist, 1.0f));
-    estimators.emplace("hitlist", std::make_pair(&hitlist, 0.7f));
-    estimators.emplace("neuralnet", std::make_pair(&neuralnet, 0.9f));
-
-    // Now do the actual estimating.
-    for (const auto& p : articles)
+    else if (input == "2")
     {
-        // Tell the estimators to use the new article.
-        for (const auto& p2 : estimators) p2.second.first->article(&p.second);
-
-        cout << "> \"" << p.first << '"' << endl;
+        cerr << "Enter a path to a folder of fake articles:" << endl;
+        string fake = get_input();
         
-        auto result = estimate(estimators);
+        cerr << "Enter a path to a folder of true articles:" << endl;
+        string true_ = get_input();
 
-        estimator::Estimate avg = average(result);
-        cout << "veracity: " << avg.veracity << ", confidence: " << avg.confidence << endl;
+        if (!cont()) return;
 
-        for (const auto& p2 : result)
+        if (fake == true_) throw exc::file("'Fake' and 'true' article paths are the same");
+
+        vector<article::Article> articles;
+
+        if (!fake.empty())
         {
-            cout << p2.first << ": veracity: " << p2.second.first.veracity << ", confidence: "
-                << p2.second.first.confidence << ", weight: " << p2.second.second << endl;
+            log::log << "Loading fake articles..." << endl;
+            map<string, article::Article> arts = load_articles(fake, article::VERACITY_FAKE);
+            for (auto& p : arts) articles.emplace_back(move(p.second));
         }
 
-        cout << endl;
+        if (!true_.empty())
+        {
+            log::log << "Loading true articles..." << endl;
+            map<string, article::Article> arts = load_articles(true_, article::VERACITY_TRUE);
+            for (auto& p : arts) articles.emplace_back(move(p.second));
+        }
+
+        log::log(_TRAINING_DATA) << "Generating training data..." << endl;
+        
+        string training_data = neuralnet::make_training_data(_WORDLIST, articles, 20);
+
+        log::log(_TRAINING_DATA) << "Writing training data..." << endl;
+        std::ofstream file(_TRAINING_DATA);
+        if (!file.good()) throw exc::file(fs::error(), _TRAINING_DATA);
+        file << training_data << endl;
+        log::success << "Everything went well!" << endl;
+        return;
+    }
+
+    else if (input == "3")
+    {
+        cerr << "Enter a path to a folder of fake articles:" << endl;
+        string fake = get_input();
+
+        cerr << "Enter a path to a folder of true articles:" << endl;
+        string true_ = get_input();
+
+        if (!cont()) return;
+
+        if (fake.empty() && true_.empty()) return;
+
+        if (fake == true_) throw exc::file("'Fake' and 'true' article paths are the same");
+
+        vector<article::Article> articles;
+
+        if (!fake.empty())
+        {
+            log::log << "Loading fake articles..." << endl;
+            map<string, article::Article> arts = load_articles(fake, article::VERACITY_FAKE);
+            for (auto& p : arts) articles.emplace_back(move(p.second));
+        }
+
+        if (!true_.empty())
+        {
+            log::log << "Loading true articles..." << endl;
+            map<string, article::Article> arts = load_articles(true_, article::VERACITY_TRUE);
+            for (auto& p : arts) articles.emplace_back(move(p.second));
+        }
+
+        log::log(_WORDLIST) << "Generating wordlist..." << endl;
+        vector<string> wordlist = generate_wordlist(articles);
+
+        log::log(_WORDLIST) << "Writing wordlist..." << endl;
+        std::ofstream file(_WORDLIST);
+        if (!file.good()) throw exc::file(fs::error(), _WORDLIST);
+        for (const string& line : wordlist) file << line << endl;
+        log::success << "Everything went well!" << endl;
+        return;
+    }
+    
+    else if (input == "4")
+    {
+        cerr << "Enter a path to a folder of fake articles (leave blank to cancel):" << endl;
+        string fake = get_input();
+
+        if (fake.empty()) return;
+
+        vector<article::Article> articles;
+
+        log::log << "Loading fake articles..." << endl;
+        map<string, article::Article> arts = load_articles(fake, article::VERACITY_FAKE);
+        for (auto& p : arts) articles.emplace_back(move(p.second));
+
+        log::log(_HITLIST) << "Generating hitlist..." << endl;
+        vector<string> hitlist = generate_wordlist(articles);
+
+        log::log(_HITLIST) << "Writing hitlist..." << endl;
+        std::ofstream file(_HITLIST);
+        if (!file.good()) throw exc::file(fs::error(), _HITLIST);
+        for (const string& line : hitlist) file << line << endl;
+        log::success << "Everything went well!" << endl;
+        return;
     }
 }
 
@@ -328,4 +393,89 @@ estimator::Estimate
     }
 
     return result;
+}
+
+vector<string> FakeNews::generate_wordlist(const std::vector<article::Article>& articles)
+{
+    vector<string> result;
+
+    map<string, string::size_type> frequencies;
+
+    // For every word in every article, convert it to upper case and count it.
+    for (const auto& article : articles)
+        for (const string& word : util::split_words(article.contents()))
+            ++frequencies[util::upper(word)];
+
+    // Convert it to a vector of pairs so we can sort it.
+    vector<pair<string, string::size_type>> v;
+    for (auto& p : frequencies) v.emplace_back(move(p));
+
+    // Sort in descending order.
+    sort(v.begin(), v.end(),
+    [](pair<string, string::size_type>& a, pair<string, string::size_type>& b)
+    {
+        return a.second > b.second;
+    });
+
+    // Add the results.
+    for (auto& p : v) result.emplace_back(std::move(p.first));
+
+    // Remove the 5% most frequent.
+    // TODO test this
+    result.erase(result.begin(), result.begin() + (result.size() / 20));
+
+    return result;
+}
+
+string FakeNews::get_input(const vector<string>& inputs)
+{
+    string input;
+
+    while (true)
+    {
+        cerr << "> " << flush;
+        cin.clear();
+        std::getline(cin, input);
+        if (input.empty()) break;
+        if (inputs.empty()) break;
+        if (std::find(inputs.cbegin(), inputs.cend(), input) != inputs.cend()) break;
+    }
+
+    return input;
+}
+
+map<string, article::Article> FakeNews::load_articles(const string& path,
+    article::ArticleVeracity veracity)
+{
+    map<string, article::Article> articles;
+
+    for (const string& file : fs::get_files(path))
+    {
+        // Is the word 'article' starting to sound weird to you?
+        article::Article article = article::Article(file);
+
+        // Make sure that the current article doesn't have an address we've already seen.
+        for (const auto& p : articles)
+        {
+            if (p.second.address() == article.address())
+            {
+                std::stringstream ss;
+                ss << "Articles '" << p.first << "' and '" << path << "' have equivalent URL"
+                    << endl;
+                throw exc::format(ss.str(), p.second.address().full());
+            }
+        }
+
+        articles.emplace(file, std::move(article));
+    }
+
+    return articles;
+}
+
+bool FakeNews::cont()
+{
+    cerr << "Continue? (y/n)" << endl;
+    string input;
+    for (; input.empty(); input = get_input({ "y", "Y", "n", "N" }));
+    return input == "y" || input == "Y";
 }

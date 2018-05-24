@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "Article.h"
 #include "NeuralNet.h"
 #include "log.h"
 #include "net.h"
@@ -24,21 +25,10 @@ namespace fakenews
 namespace neuralnet
 {
 
-string make_training_data(const string& whitelist_path, const string& blacklist_path,
-    const string& wordlist_path, int repetitions)
+string make_training_data(const string& wordlist_path, const vector<article::Article>& articles,
+    int repetitions)
 {
-    vector<net::Address> whitelist;
-    vector<net::Address> blacklist;
-
-    // Try and load the whitelist and blacklist.
-    {
-        vector<string> lines = util::load_clean_warn(whitelist_path, "URLs");
-        for (string& s : lines) whitelist.emplace_back(std::move(s));
-        
-        lines = util::load_clean_warn(blacklist_path, "URLs");
-        for (string& s : lines) blacklist.emplace_back(std::move(s));
-    }
-    
+    // Try and load the wordlist.    
     vector<string> wordlist = util::load_words(wordlist_path);
 
     std::stringstream ss;
@@ -51,28 +41,23 @@ string make_training_data(const string& whitelist_path, const string& blacklist_
 
     // TODO Maybe if it turns out to be easy, you could multithread this.
 
-    for (const net::Address& site : whitelist)
+    for (const article::Article& article : articles)
     {
-        log::log(site.full()) << "Getting whitelisted page..." << endl;
-        
-        string html;
-        try                       { html = util::upper(net::get_file(site.full())); }
-        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl;      }
+        if (article.veracity() == article::VERACITY_UNKNOWN) continue;
 
-        for (int i = 0; i < repetitions; ++i)
-            pieces.emplace_back(std::move(training_line(html, wordlist)), "out: 1.0");
-    }
+        string in_line = training_line(article.contents(), wordlist);
 
-    for (const net::Address& site : blacklist)
-    {
-        log::log(site.full()) << "Getting blacklisted page..." << endl;
-        
-        string html;
-        try                       { html = util::upper(net::get_file(site.full())); }
-        catch (const exc::net& e) { log::error(e.which()) << e.what() << endl;      }
-
-        for (int i = 0; i < repetitions; ++i)
-            pieces.emplace_back(std::move(training_line(html, wordlist)), "out: 0.0");
+        switch (article.veracity())
+        {
+            case article::VERACITY_TRUE:
+                pieces.emplace_back(std::move(in_line), "out: 1.0");
+                break;
+            case article::VERACITY_FAKE:
+                pieces.emplace_back(std::move(in_line), "out: 0.0");
+                break;
+            default:
+                assert(false);
+        }
     }
 
     // Now shuffle the pieces and add them.
